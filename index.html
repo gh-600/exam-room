@@ -429,13 +429,21 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       if (!to || !to.section || to.section.id !== u.section.id) session.live.forEach((x) => { if (x.section && x.section.id === u.section.id) session.locked[x.key] = true; });
     }
   }
+  function trackTime() {
+    if (!session || view !== "question") return;
+    const k = session.live[session.idx].key, now = Date.now();
+    session.time = session.time || {};
+    if (session.enteredAt) session.time[k] = (session.time[k] || 0) + (now - session.enteredAt);
+    session.enteredAt = now;
+  }
   function go(toIdx) {
     if (toIdx < 0 || toIdx >= session.live.length) return;
     if (session.locked[session.live[toIdx].key]) return;
+    trackTime();
     leaveUnit(session.idx, toIdx);
     session.idx = toIdx; view = "question"; persist(); render(); window.scrollTo(0, 0);
   }
-  function openReview() { leaveUnit(session.idx, null); view = "review"; persist(); render(); window.scrollTo(0, 0); }
+  function openReview() { trackTime(); session.enteredAt = null; leaveUnit(session.idx, null); view = "review"; persist(); render(); window.scrollTo(0, 0); }
 
   function startTimer() {
     clearInterval(timerHandle);
@@ -459,6 +467,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
 
   async function finishExam(timeUp) {
     if (!session || session.finished) return;
+    trackTime();
     session.finished = true; session.finishedAt = Date.now(); session.timeUp = !!timeUp;
     session.results = computeResults();
     storeSet(SESSION_KEY, null);
@@ -493,7 +502,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       main.append(h("div", { class: "notice info" },
         h("div", { class: "row" },
           h("span", { text: "You have an unfinished attempt: " + (saved.bankTitle || "exam") + ", " + Object.keys(saved.answers || {}).length + " of " + saved.units.length + " answered" + (left !== null ? (left > 0 ? ", " + fmtTime(left) + " left." : ", time is up.") : ".") }),
-          h("button", { type: "button", onclick: () => { session = saved; session.first = session.first || {}; hydrateUnits(); view = "question"; startTimer(); render(); } }, "Resume"),
+          h("button", { type: "button", onclick: () => { session = saved; session.first = session.first || {}; session.enteredAt = null; hydrateUnits(); view = "question"; startTimer(); render(); } }, "Resume"),
           h("button", { type: "button", class: "quiet", onclick: () => { storeSet(SESSION_KEY, null); renderStart(); } }, "Discard")
         )));
     }
@@ -621,6 +630,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
   function renderQuestion() {
     const main = $("main");
     const u = cur();
+    if (!session.enteredAt) session.enteredAt = Date.now();
     const mode = session.cfg.mode;
     const checking = mode !== "exam";
     const revealed = checking && session.revealed[u.key];
@@ -838,7 +848,9 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       h("div", { class: "row", style: "margin-top:6px" },
         h("button", { type: "button", onclick: () => { const ids = [...new Set(r.per.filter((x) => x.pts < 1).map((x) => x.u.qid))]; if (ids.length) startExam(session.cfg, ids); }, disabled: !r.per.some((x) => x.pts < 1) }, "Retake the ones I missed"),
         h("button", { type: "button", class: "secondary", onclick: () => copyErrors(r) }, "Copy mistakes for my error log"),
-        canSave() ? h("button", { type: "button", class: "quiet", onclick: () => saveFile("gh600-attempt-" + new Date(session.finishedAt).toISOString().slice(0, 16).replace(/[:T]/g, "-") + ".json", JSON.stringify(exportAttempt(r), null, 2)) }, "Export results") : null,
+        h("button", { type: "button", class: "secondary", onclick: () => copyForClaude(r) }, "Copy for Claude"),
+        canSave() ? h("button", { type: "button", class: "quiet", onclick: () => saveFile(attemptName() + ".md", attemptMarkdown(r, false)) }, "Download report (.md)") : null,
+        canSave() ? h("button", { type: "button", class: "quiet", onclick: () => saveFile(attemptName() + ".json", JSON.stringify(exportAttempt(r), null, 2)) }, "Download data (.json)") : null,
         h("button", { type: "button", class: "quiet", onclick: () => { session = null; view = "start"; render(); } }, "New exam")),
       h("p", { id: "copyMsg", class: "small muted", role: "status" })
     );
@@ -906,16 +918,75 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     msg.replaceChildren(h("span", null, "Copy isn't available here. Select the text below and copy it:"), ta);
     ta.focus(); ta.select();
   }
+  const plain = (t) => String(t ?? "").replace(/\*\*/g, "").trim();
+  function itemRecord(x, n) {
+    const u = x.u, a = session.answers[u.key];
+    const rec = { n, key: u.key, domain: u.domain || null, domainName: u.domain ? domainName(u.domain) : null, type: u.kind,
+      points: Math.round(x.pts * 100) / 100, result: x.pts === 1 ? "correct" : x.pts > 0 ? "partial" : x.answered ? "incorrect" : "unanswered",
+      flagged: !!session.flags[u.key], seconds: Math.round(((session.time || {})[u.key] || 0) / 1000) };
+    if (u.section && u.section.type === "case") rec.caseStudy = { title: u.section.title, scenario: plain(u.section.scenario) };
+    if (u.section && u.section.type === "yesno") rec.scenario = plain(u.section.scenario);
+    rec.question = plain(u.kind === "dropdown" ? u.q.stem + "\n\n" + String(u.q.template).replace(/\[\[(\w+)\]\]/g, "[ $1 ]") : stemText(u));
+    if (u.kind === "single" || u.kind === "multiple") rec.options = (u.optOrder || u.q.options.map((o) => o.id)).map((id, i) => { const o = u.q.options.find((y) => y.id === id); return { letter: letters[i], text: plain(o.text), correct: u.q.answer.includes(id), chosen: Array.isArray(a) ? a.includes(id) : a === id, rationale: o.rationale ? plain(o.rationale) : undefined }; });
+    if (u.kind === "dropdown") rec.blanks = Object.entries(u.q.blanks).map(([k, b]) => ({ box: k, chosen: (a || {})[k] || null, correct: b.answer, rationale: b.rationale ? plain(b.rationale) : undefined }));
+    rec.yourAnswer = plain(describeAnswer(u, a));
+    rec.correctAnswer = plain(correctAnswer(u));
+    const expl = u.kind === "yesno" ? (u.itemObj.explanation || u.top.explanation) : (u.q.explanation || (u.parent && u.parent.explanation));
+    if (expl) rec.explanation = plain(expl);
+    const take = u.q.takeaway || (u.top && u.top.takeaway) || (u.parent && u.parent.takeaway);
+    if (take) rec.takeaway = plain(take);
+    const src = u.q.sources || (u.top && u.top.sources);
+    if (src && src.length) rec.sources = src;
+    return rec;
+  }
   function exportAttempt(r) {
-    return { bankTitle: session.bankTitle, mode: session.cfg.mode, startedAt: new Date(session.startedAt).toISOString(), finishedAt: new Date(session.finishedAt).toISOString(), score: r.score, passing: r.passing, items: r.total, correct: Math.round(r.pts * 100) / 100,
-      byDomain: Object.fromEntries(Object.entries(r.byDomain).map(([d, v]) => [d, Math.round((v.pts / v.n) * 100)])),
-      answers: r.per.map((x) => ({ key: x.u.key, domain: x.u.domain, points: Math.round(x.pts * 100) / 100, answer: session.answers[x.u.key] ?? null })) };
+    return { format: "gh600-exam-room-attempt/v2", bankTitle: session.bankTitle, mode: session.cfg.mode, startedAt: new Date(session.startedAt).toISOString(), finishedAt: new Date(session.finishedAt).toISOString(),
+      durationSeconds: Math.round((session.finishedAt - session.startedAt) / 1000), timeUp: !!session.timeUp,
+      score: r.score, passing: r.passing, passed: r.score >= r.passing, itemCount: r.total, correct: Math.round(r.pts * 100) / 100,
+      byDomain: Object.fromEntries(Object.entries(r.byDomain).map(([d, v]) => [d, { name: domainName(d), percent: Math.round((v.pts / v.n) * 100), items: v.n }])),
+      items: r.per.map((x, i) => itemRecord(x, i + 1)) };
+  }
+  function attemptMarkdown(r, onlyMistakes) {
+    const e = exportAttempt(r);
+    const L = [];
+    L.push("# GH-600 practice attempt: " + e.bankTitle, "");
+    L.push("- Mode: " + e.mode + " · Finished: " + e.finishedAt.slice(0, 16).replace("T", " ") + " UTC · Time used: " + fmtTime(e.durationSeconds * 1000) + (e.timeUp ? " (time ran out)" : ""));
+    L.push("- Score: " + e.score + " / 1000 (pass mark " + e.passing + ") · " + e.correct + " of " + e.itemCount + " items correct", "");
+    L.push("## By domain", "", "| Domain | Name | Score | Items |", "|---|---|---|---|");
+    Object.entries(e.byDomain).sort().forEach(([d, v]) => L.push("| " + d + " | " + v.name + " | " + v.percent + " % | " + v.items + " |"));
+    L.push("", "## " + (onlyMistakes ? "Incorrect, partly correct and unanswered items" : "All items"), "");
+    e.items.filter((x) => !onlyMistakes || x.result !== "correct").forEach((x) => {
+      L.push("### Q" + x.n + " · " + (x.domain || "") + " · " + x.result + (x.flagged ? " · marked for review" : "") + " · " + x.seconds + " s", "");
+      if (x.caseStudy) L.push("**Case study: " + x.caseStudy.title + "**", "", x.caseStudy.scenario, "");
+      if (x.scenario) L.push(x.scenario, "");
+      L.push(x.question, "");
+      if (x.options) { x.options.forEach((o) => L.push("- " + o.letter + ". " + o.text + (o.correct ? "  ✅ correct" : "") + (o.chosen ? "  ← my choice" : ""))); L.push(""); }
+      L.push("- **My answer:** " + x.yourAnswer, "- **Correct answer:** " + x.correctAnswer);
+      if (x.explanation) L.push("- **Explanation:** " + x.explanation);
+      if (x.sources) L.push("- **Sources:** " + x.sources.join(" , "));
+      L.push("");
+    });
+    L.push("## What I'd like from Claude", "",
+      "Analyse these results for my GH-600 preparation:",
+      "1. Group my mistakes by underlying concept, and name the misconception behind each one.",
+      "2. Tell me whether any mistake looks like a misread question or a time-pressure error rather than a knowledge gap (seconds per item are shown).",
+      "3. For each weak concept, point me to the GitHub Docs or Microsoft Learn page to review.",
+      "4. Give me 3 new scenario questions per weak concept, without showing the answers until I reply.",
+      "5. If you think an answer key or explanation here is wrong, say so and cite the source.");
+    return L.join("\n");
+  }
+  function copyForClaude(r) {
+    const text = attemptMarkdown(r, true);
+    const msg = $("copyMsg");
+    const done = () => { msg.textContent = "Copied. Paste it into a Claude chat to analyse your mistakes."; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, msg)); else fallbackCopy(text, msg);
   }
   const canSave = () => !!dl || standalone;
+  const attemptName = () => "gh600-attempt-" + new Date(session.finishedAt).toISOString().slice(0, 16).replace(/[:T]/g, "-");
   async function saveFile(name, data) {
     if (!dl && standalone) {
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([data], { type: "application/json" }));
+      a.href = URL.createObjectURL(new Blob([data], { type: name.endsWith(".md") ? "text/markdown" : "application/json" }));
       a.download = name; document.body.append(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
       return;
