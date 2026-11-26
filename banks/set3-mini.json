@@ -1,0 +1,113 @@
+{
+  "title": "GH-600 practice bank · set 3 (mini, 3 questions)",
+  "version": 1,
+  "author": "Claude, checked against GitHub Docs (November 2026)",
+  "passingScore": 700,
+  "durationMinutes": 8,
+  "domains": {
+    "D2": "Tool use and environment interaction",
+    "D4": "Evaluation, error analysis and tuning",
+    "D5": "Multi-agent coordination"
+  },
+  "questions": [
+    {
+      "id": "s3-deploy-concurrency",
+      "type": "dropdown",
+      "domain": "D5",
+      "stem": "Two agents can each trigger the workflow that deploys `orders-api` to production. Requirements:\n\n- The operations team must approve every production deployment.\n- Only one deployment can run at a time.\n- A deployment that has started must never be interrupted.\n\nThe repository has an environment named `production` with the operations team as required reviewers. How should you complete the deploy job? Select the correct option for each box.",
+      "template": "jobs:\n  deploy:\n    runs-on: ubuntu-latest\n    environment: [[env]]\n    concurrency:\n      group: [[group]]\n      cancel-in-progress: [[cancel]]\n    steps:\n      - run: ./deploy.sh",
+      "blanks": {
+        "env": {
+          "options": ["production", "${{ github.ref_name }}", "prod-${{ github.run_id }}"],
+          "answer": "production",
+          "rationale": "Only the exact name `production` picks up the required reviewers. Any other name creates a new environment with no protection rules."
+        },
+        "group": {
+          "options": ["deploy-production", "${{ github.run_id }}", "${{ github.sha }}"],
+          "answer": "deploy-production",
+          "rationale": "A fixed group name is shared by every run, so they're serialised. `run_id` and `sha` give each run (or commit) its own group, so nothing waits."
+        },
+        "cancel": {
+          "options": ["false", "true"],
+          "answer": "false",
+          "rationale": "`false` lets the running deployment finish while the next one waits. `true` would cancel a deployment mid-way."
+        }
+      },
+      "explanation": "The environment provides the human gate, and a shared concurrency group with `cancel-in-progress: false` serialises deployments without interrupting one that has started.",
+      "takeaway": "Exact environment name for the gate; shared group + cancel-in-progress: false to serialise safely.",
+      "sources": [
+        "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency",
+        "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments"
+      ]
+    },
+    {
+      "id": "s3-github-token",
+      "type": "yesno",
+      "domain": "D2",
+      "scenario": "A workflow in `contoso/orders-api` runs an agent step that authenticates with `GITHUB_TOKEN`. The workflow declares `permissions: contents: write` and `actions: write`.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.",
+      "items": [
+        {
+          "id": "s1",
+          "statement": "When the agent pushes a commit to a branch of `contoso/orders-api` with `GITHUB_TOKEN`, workflows in that repository that run `on: push` are triggered.",
+          "answer": "no",
+          "explanation": "Events created with `GITHUB_TOKEN` don't start new workflow runs, to prevent recursive loops."
+        },
+        {
+          "id": "s2",
+          "statement": "The agent can start another workflow in `contoso/orders-api` by sending a `workflow_dispatch` event with `GITHUB_TOKEN`.",
+          "answer": "yes",
+          "explanation": "`workflow_dispatch` and `repository_dispatch` are the exceptions: they do start runs when sent with `GITHUB_TOKEN`. Dispatching a workflow needs `actions: write`."
+        },
+        {
+          "id": "s3",
+          "statement": "The agent can push a commit to `contoso/shared-libs`, another repository in the same organisation, with the same `GITHUB_TOKEN`.",
+          "answer": "no",
+          "explanation": "`GITHUB_TOKEN` is scoped to the repository that runs the workflow. Cross-repository writes need a GitHub App token (or, less ideally, a personal token)."
+        }
+      ],
+      "takeaway": "GITHUB_TOKEN: one repository, one job, and its events don't trigger new runs except dispatch events.",
+      "sources": ["https://docs.github.com/en/actions/concepts/security/github_token"]
+    },
+    {
+      "id": "s3-recurring-lint",
+      "type": "multiple",
+      "select": 2,
+      "domain": "D4",
+      "stem": "Over the last month, most pull requests from your Copilot custom agent fail the same lint rule (`IDE0055`, formatting). Reviewers keep sending them back, which slows delivery. You want to reduce how often it happens and make sure non-compliant code can never be merged.\n\nWhich two actions should you take? Each correct answer presents part of the solution.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add the formatting convention and the command `dotnet format --verify-no-changes` to the agent's instructions so it runs the check before finishing.",
+          "rationale": "Correct. This tunes the agent's behaviour at the instructions layer so the error happens less often. On its own it's guidance, which is why you also need an enforced check."
+        },
+        {
+          "id": "b",
+          "text": "Make the lint job a required status check in the ruleset for `main`.",
+          "rationale": "Correct. A required check is the enforced gate: a pull request that fails formatting can't be merged, whatever the agent claims."
+        },
+        {
+          "id": "c",
+          "text": "Switch the agent to a larger model.",
+          "rationale": "Incorrect. It might reduce the error rate, but it isn't targeted at the root cause and it enforces nothing."
+        },
+        {
+          "id": "d",
+          "text": "Disable `IDE0055` in `.editorconfig` for files changed by the agent.",
+          "rationale": "Incorrect. It hides the signal instead of fixing the behaviour and lowers the quality bar."
+        },
+        {
+          "id": "e",
+          "text": "Add the agent to the ruleset bypass list so formatting issues don't block it.",
+          "rationale": "Incorrect. The bypass list lets an actor skip every rule. Never put an agent on it."
+        }
+      ],
+      "answer": ["a", "b"],
+      "explanation": "Fix recurring agent failures at two layers: tune the instructions so the error happens less, and enforce the standard with a required check so it can't be merged when it does happen.",
+      "takeaway": "Recurring agent error → tune instructions (prevent) + required check (enforce). Never hide the signal or bypass the gate.",
+      "sources": [
+        "https://docs.github.com/en/copilot/tutorials/cloud-agent/get-the-best-results",
+        "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets"
+      ]
+    }
+  ]
+}
