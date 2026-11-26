@@ -1,0 +1,693 @@
+{
+  "title": "GH-600 practice bank · set 1",
+  "version": 1,
+  "author": "Claude, checked against the GH-600 study guide and GitHub Docs (November 2026)",
+  "passingScore": 700,
+  "durationMinutes": 45,
+  "domains": {
+    "D1": "Agent architecture and SDLC",
+    "D2": "Tool use and environment interaction",
+    "D3": "Memory, state and execution",
+    "D4": "Evaluation, error analysis and tuning",
+    "D5": "Multi-agent coordination",
+    "D6": "Guardrails and accountability"
+  },
+  "questions": [
+    {
+      "id": "d1-plan-gate",
+      "type": "single",
+      "domain": "D1",
+      "stem": "Contoso wants GitHub Copilot cloud agent to change the rounding rules used across twelve files in the **Payments** module. A wrong change has caused an incident before.\n\nYou need to ensure that no code is written until a person has approved how the change will be made. The solution must rely on controls that the agent cannot ignore.\n\nWhat should you do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add \"Always ask for approval before changing code\" to `.github/copilot-instructions.md`.",
+          "rationale": "Incorrect. An instruction is guidance the model may ignore, especially under pressure to finish. It isn't an enforced approval point."
+        },
+        {
+          "id": "b",
+          "text": "Increase the required approving reviews on the default branch from one to three.",
+          "rationale": "Incorrect. Extra reviewers only act once code already exists in a pull request. The requirement is to stop code being written before the plan is approved."
+        },
+        {
+          "id": "c",
+          "text": "Use a planner custom agent whose `tools` are limited to read and search to produce the plan in a pull request, require that plan to be approved and merged, and only then assign the implementation.",
+          "rationale": "Correct. Restricting `tools` in the frontmatter removes the ability to edit, and a reviewed, merged plan is an explicit human approval before implementation is assigned."
+        },
+        {
+          "id": "d",
+          "text": "Assign the issue to Copilot and ask it in a pull request comment to wait until a reviewer replies.",
+          "rationale": "Incorrect. A comment is just another instruction. Nothing in GitHub forces the agent to wait for the reply."
+        }
+      ],
+      "answer": [
+        "c"
+      ],
+      "explanation": "Instructions and comments (A, D) are guidance the model may not follow. Limiting the planner's `tools` in its frontmatter means it cannot edit files at all, and making the plan a reviewed, merged artifact creates an explicit approval point before implementation starts. More reviewers (B) add review after the code exists; they don't stop code being written first.",
+      "sources": [
+        "https://docs.github.com/en/copilot/reference/custom-agents-configuration",
+        "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/gh-600"
+      ],
+      "takeaway": "Separate planning from execution with a platform restriction (read-only tools) plus a reviewed artifact, not with instructions."
+    },
+    {
+      "id": "d1-skipped-check",
+      "type": "multiple",
+      "select": 2,
+      "domain": "D1",
+      "stem": "The default branch requires the status checks `build` and `test`. In a pull request, an agent adds this condition to the `test` job in `.github/workflows/ci.yml`:\n\n`if: ${{ !contains(github.event.pull_request.title, '[skip-tests]') }}`\n\nThe agent also gives the pull request a title that contains `[skip-tests]`. The `test` job is reported as skipped.\n\nWhich two changes together prevent a change like this from being merged unnoticed? Each correct answer presents part of the solution.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add an aggregator job with `if: always()` that fails unless every job it needs succeeded, and make it the only required status check.",
+          "rationale": "Correct. A required check that is skipped counts as passing. An aggregator with `if: always()` converts 'skipped' into a failure of the single required check."
+        },
+        {
+          "id": "b",
+          "text": "Enable \"Require branches to be up to date before merging\".",
+          "rationale": "Incorrect. Up-to-date branches retest the PR against the latest `main`, but a skipped job is still skipped."
+        },
+        {
+          "id": "c",
+          "text": "Make `.github/` owned by the platform team in CODEOWNERS and require review from code owners in the ruleset.",
+          "rationale": "Correct. PR workflows run the version in the PR branch, so a workflow edit must be reviewed by an owner of `.github/`. CODEOWNERS only blocks merges when code owner review is required."
+        },
+        {
+          "id": "d",
+          "text": "Enable \"Dismiss stale pull request approvals when new commits are pushed\".",
+          "rationale": "Incorrect. Dismissing stale approvals reacts to new commits; it doesn't detect that a job was skipped."
+        },
+        {
+          "id": "e",
+          "text": "Add `timeout-minutes: 10` to the `test` job.",
+          "rationale": "Incorrect. A timeout limits run time; a skipped job never starts, so it has no effect."
+        }
+      ],
+      "answer": [
+        "a",
+        "c"
+      ],
+      "explanation": "A skipped required check counts as passing. An aggregator job turns 'skipped' into a failure of the one required check (A). Because pull request workflows run the version of the workflow in the PR branch, workflow edits must also be reviewed by an owner of `.github/` (C). Up-to-date branches (B) and stale-approval dismissal (D) don't detect a skipped job; a timeout (E) is unrelated.",
+      "sources": [
+        "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/troubleshooting-required-status-checks",
+        "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners"
+      ],
+      "takeaway": "Skipped = pass, missing = blocked. Defend with an aggregator job plus mandatory review of `.github/`."
+    },
+    {
+      "id": "d2-agent-secrets",
+      "type": "yesno",
+      "domain": "D2",
+      "scenario": "Fabrikam uses GitHub Copilot cloud agent in the repository `fabrikam/billing`. CI restores NuGet packages from a private feed by using a repository secret named `NUGET_TOKEN` stored under **Settings > Secrets and variables > Actions**. The team also wants the agent to use a Jira MCP server that needs an API key.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.",
+      "items": [
+        {
+          "id": "s1",
+          "statement": "During its session, the cloud agent can read `NUGET_TOKEN` from the repository's Actions secrets.",
+          "answer": "no",
+          "explanation": "The cloud agent does not have access to GitHub Actions, Codespaces or Dependabot secrets. Secrets it needs must be created under **Agents**."
+        },
+        {
+          "id": "s2",
+          "statement": "A secret named `COPILOT_MCP_JIRA_TOKEN` created under **Agents** is passed to MCP servers that reference it, but is not exposed to the agent's shell.",
+          "answer": "yes",
+          "explanation": "Agents secrets whose names start with `COPILOT_MCP_` are only made available to MCP server configurations that reference them."
+        },
+        {
+          "id": "s3",
+          "statement": "If the job in `.github/workflows/copilot-setup-steps.yml` is named `setup`, Copilot runs it before the agent starts working.",
+          "answer": "no",
+          "explanation": "The job must be named `copilot-setup-steps`; otherwise Copilot ignores it."
+        }
+      ],
+      "sources": [
+        "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/configure-secrets-and-variables",
+        "https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/customize-the-agent-environment"
+      ],
+      "takeaway": "The cloud agent only sees Agents secrets; COPILOT_MCP_ secrets go only to MCP servers; the setup job must be named copilot-setup-steps."
+    },
+    {
+      "id": "d2-sarif-permissions",
+      "type": "dropdown",
+      "domain": "D2",
+      "stem": "You are writing a workflow that analyses pull requests with a third-party scanner and uploads the results as SARIF so they appear as code scanning alerts. Pull requests can come from forks. The workflow must follow least privilege and must not expose secrets to code from forks.\n\nHow should you complete the workflow? Select the correct option for each box.",
+      "template": "on:\n  [[trigger]]:\n    branches: [main]\n\npermissions:\n  contents: [[contents]]\n  security-events: [[security]]\n\njobs:\n  scan:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: ./scanner --format sarif --out results.sarif\n      - uses: github/codeql-action/upload-sarif@v3\n        with:\n          sarif_file: results.sarif",
+      "blanks": {
+        "trigger": {
+          "options": [
+            "pull_request",
+            "pull_request_target",
+            "workflow_run"
+          ],
+          "answer": "pull_request",
+          "rationale": "`pull_request` gives fork PRs a read-only token and no secrets. `pull_request_target` would run with secrets and write access, and `workflow_run` isn't the PR trigger."
+        },
+        "contents": {
+          "options": [
+            "read",
+            "write",
+            "none"
+          ],
+          "answer": "read",
+          "rationale": "Checkout only needs to read the code. `write` would let a compromised step push changes."
+        },
+        "security": {
+          "options": [
+            "write",
+            "read",
+            "none"
+          ],
+          "answer": "write",
+          "rationale": "Uploading SARIF creates code scanning alerts, which needs `security-events: write`."
+        }
+      },
+      "explanation": "`pull_request` runs PRs from forks with a read-only token and no secrets, so fork code can't steal anything; `pull_request_target` would run with secrets and write access. Checkout needs `contents: read`, and uploading SARIF needs `security-events: write`. Note that SARIF uploads from fork PRs are limited by the read-only token; the point here is choosing the safe trigger and minimal scopes.",
+      "sources": [
+        "https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github",
+        "https://docs.github.com/en/actions/reference/security/secure-use"
+      ],
+      "takeaway": "Safe trigger for untrusted PRs, then only the scopes each step needs."
+    },
+    {
+      "id": "d2-github-token-pr",
+      "type": "single",
+      "domain": "D2",
+      "stem": "A scheduled workflow updates generated API clients and opens a pull request by using `GITHUB_TOKEN`. CI on those pull requests sits in \"Workflow awaiting approval\" until a maintainer approves it, which delays delivery.\n\nYou need CI to start automatically on these pull requests. The solution must follow least privilege.\n\nWhat should you do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Change the CI workflow trigger to `pull_request_target`.",
+          "rationale": "Incorrect. `pull_request_target` runs with secrets and a write token in the base context. It's riskier and isn't how you make PRs created by automation run normal CI."
+        },
+        {
+          "id": "b",
+          "text": "Create the pull request with an installation token from a GitHub App that is installed only on this repository with the permissions it needs.",
+          "rationale": "Correct. Events from a GitHub App installation token trigger workflows normally, and the token is short-lived and scoped to the repository and permissions you grant."
+        },
+        {
+          "id": "c",
+          "text": "Create the pull request with a classic personal access token that belongs to a repository administrator.",
+          "rationale": "Incorrect. It would trigger CI, but a classic PAT of an admin is long-lived and far broader than needed: it violates least privilege."
+        },
+        {
+          "id": "d",
+          "text": "Set `permissions: write-all` in the scheduled workflow.",
+          "rationale": "Incorrect. The token's permissions don't change the rule that `GITHUB_TOKEN` events don't start normal runs. It only widens privilege."
+        }
+      ],
+      "answer": [
+        "b"
+      ],
+      "explanation": "Pull requests opened or updated with `GITHUB_TOKEN` get workflow runs that wait for approval. A short-lived, narrowly scoped GitHub App token triggers normal CI. An admin's PAT (C) works but is long-lived and over-privileged. `write-all` (D) doesn't change the triggering rule, and `pull_request_target` (A) adds risk.",
+      "sources": [
+        "https://docs.github.com/en/actions/concepts/security/github_token"
+      ],
+      "takeaway": "Automation that must trigger normal CI should use a GitHub App token, not GITHUB_TOKEN or a personal token."
+    },
+    {
+      "id": "d2-agent-flow",
+      "type": "order",
+      "domain": "D2",
+      "stem": "A developer assigns an issue to GitHub Copilot cloud agent in a repository that has `copilot-setup-steps.yml`, a CI workflow on `pull_request`, and a ruleset that requires checks and one approving review.\n\nPut the events in the order in which they happen.",
+      "items": [
+        {
+          "id": "setup",
+          "text": "The `copilot-setup-steps` job prepares the agent's environment."
+        },
+        {
+          "id": "work",
+          "text": "The agent changes code and pushes commits to its own `copilot/` branch."
+        },
+        {
+          "id": "approve-runs",
+          "text": "A user with write access approves the pending workflow runs."
+        },
+        {
+          "id": "checks",
+          "text": "Required checks report results on the pull request's head commit."
+        },
+        {
+          "id": "review",
+          "text": "A reviewer who did not request the work approves the pull request."
+        },
+        {
+          "id": "merge",
+          "text": "A person merges the pull request."
+        }
+      ],
+      "answer": [
+        "setup",
+        "work",
+        "approve-runs",
+        "checks",
+        "review",
+        "merge"
+      ],
+      "explanation": "Setup steps run before the agent starts. The agent writes only to its own branch. Workflows on its pull requests wait for approval, then produce checks. The person who asked Copilot for the work can't approve it, and the agent can't merge.",
+      "sources": [
+        "https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-cloud-agent",
+        "https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/risks-and-mitigations"
+      ],
+      "takeaway": "Setup → agent works on its branch → humans approve runs → checks → independent review → human merge."
+    },
+    {
+      "id": "d2-mcp-tools",
+      "type": "single",
+      "domain": "D2",
+      "stem": "You add a Jira MCP server to the cloud agent's MCP configuration for a repository. The server exposes tools to read, create, transition and delete issues. The agent only needs to read issue details.\n\nYou need to apply least privilege to the agent's use of this server.\n\nWhat should you do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add a sentence to the custom agent's instructions telling it to only read issues.",
+          "rationale": "Incorrect. Instructions are guidance. The agent could still call the delete tool."
+        },
+        {
+          "id": "b",
+          "text": "Allow the Jira host in the cloud agent firewall and block the other Atlassian hosts.",
+          "rationale": "Incorrect. The firewall controls which hosts are reachable. Read and delete calls go to the same host, so it can't tell them apart."
+        },
+        {
+          "id": "c",
+          "text": "In the server's configuration, replace `\"tools\": [\"*\"]` with an explicit list that contains only the read tool.",
+          "rationale": "Correct. The `tools` list in the MCP server configuration is the allowlist of callable tools; `*` means all."
+        },
+        {
+          "id": "d",
+          "text": "Store the Jira API key as an Agents secret named `COPILOT_MCP_JIRA_KEY`.",
+          "rationale": "Incorrect. The prefix keeps the key away from the agent's shell, but it doesn't restrict which tools the agent can call."
+        }
+      ],
+      "answer": [
+        "c"
+      ],
+      "explanation": "The `tools` list in the MCP configuration decides which of the server's tools the agent can call; `*` allows all of them. Instructions (A) are guidance. The firewall (B) controls network destinations, not which tools on the same host are used. The `COPILOT_MCP_` prefix (D) protects the key but doesn't limit tool use.",
+      "sources": [
+        "https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/extend-coding-agent-with-mcp"
+      ],
+      "takeaway": "Least privilege for MCP = list the specific tools, never `*`."
+    },
+    {
+      "id": "d3-resume-state",
+      "type": "single",
+      "domain": "D3",
+      "stem": "An agent implements a multi-step migration across several sessions. When a session times out, the next session repeats steps that were already done and sometimes reverses earlier decisions.\n\nYou need the next session to resume reliably and remain auditable.\n\nWhat should you do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Store progress in `actions/cache` so that the next run restores it.",
+          "rationale": "Incorrect. A cache can be evicted and is meant for speeding up dependencies, not for holding authoritative state."
+        },
+        {
+          "id": "b",
+          "text": "Keep a progress file and decision log on the working branch, and a checklist in the pull request description, and instruct the agent to read and update them at the start and end of each session.",
+          "rationale": "Correct. A versioned progress file and decision log on the branch, plus a checklist in the PR, survive across sessions and can be reviewed."
+        },
+        {
+          "id": "c",
+          "text": "Increase the session timeout so the work completes in a single session.",
+          "rationale": "Incorrect. A longer timeout postpones the problem. The next interruption still loses state."
+        },
+        {
+          "id": "d",
+          "text": "Ask the agent to summarise its progress in its final chat message.",
+          "rationale": "Incorrect. A chat message isn't a durable, structured record the next session can reliably read and update."
+        }
+      ],
+      "answer": [
+        "b"
+      ],
+      "explanation": "Durable, versioned artifacts on the branch and in the pull request survive sessions and can be reviewed. A cache (A) can be evicted and isn't meant to hold state. A longer timeout (C) doesn't solve resumption. A chat message (D) isn't a durable, structured record.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/"
+      ],
+      "takeaway": "State that must survive sessions belongs in durable, reviewable artifacts: files on the branch, the PR, issues."
+    },
+    {
+      "id": "d3-memory-stale",
+      "type": "single",
+      "domain": "D3",
+      "stem": "Your team uses Copilot Memory. A developer worries that a fact Copilot stored months ago about the repository's logging library could be applied after the code has changed.\n\nWhich statement describes how Copilot Memory reduces this risk?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Memories are stored with citations to code, are checked against the current branch before they are used, and are deleted automatically after a period without use.",
+          "rationale": "Correct. Repository facts are stored with code citations, checked against the current branch before use, and deleted after 28 days without use."
+        },
+        {
+          "id": "b",
+          "text": "Memories are deleted every time a pull request is merged into the default branch.",
+          "rationale": "Incorrect. Merging a pull request doesn't clear Copilot Memory."
+        },
+        {
+          "id": "c",
+          "text": "Memories can only be created by repository administrators, who review them weekly.",
+          "rationale": "Incorrect. Memories aren't created only by administrators, and there's no weekly review process."
+        },
+        {
+          "id": "d",
+          "text": "Memories are kept only for the duration of a single agent session.",
+          "rationale": "Incorrect. The point of Copilot Memory is to persist across sessions."
+        }
+      ],
+      "answer": [
+        "a"
+      ],
+      "explanation": "Copilot Memory stores repository facts with citations, checks those citations against the current branch before relying on them, and deletes entries that go unused for 28 days (the timer may reset when an entry is validated and used). The other options describe mechanisms Copilot Memory doesn't use.",
+      "sources": [
+        "https://docs.github.com/en/copilot/concepts/agents/copilot-memory"
+      ],
+      "takeaway": "Copilot Memory guards against staleness with citation checks and automatic expiry."
+    },
+    {
+      "id": "d4-objective-signals",
+      "type": "multiple",
+      "select": 2,
+      "domain": "D4",
+      "stem": "You are defining what must be true before an agent's pull request can be merged. The gate must rely on objective evidence produced by the system rather than on the agent's own assessment.\n\nWhich two signals should you use? Each correct answer presents part of the solution.",
+      "options": [
+        {
+          "id": "a",
+          "text": "The agent's statement in the pull request that all tests pass.",
+          "rationale": "Incorrect. That's the agent's own claim, not evidence produced by the system."
+        },
+        {
+          "id": "b",
+          "text": "Required status checks reported by the repository's CI workflow.",
+          "rationale": "Correct. Required checks are objective results from your CI, and a ruleset can enforce them."
+        },
+        {
+          "id": "c",
+          "text": "Code scanning results with no new alerts at or above the configured severity.",
+          "rationale": "Correct. Code scanning results are an objective security signal and can be enforced through code scanning merge protection."
+        },
+        {
+          "id": "d",
+          "text": "The number of commits in the pull request.",
+          "rationale": "Incorrect. Commit count says nothing about whether the change is correct or safe."
+        },
+        {
+          "id": "e",
+          "text": "The length of the agent's session log.",
+          "rationale": "Incorrect. The length of a log isn't a quality measure."
+        }
+      ],
+      "answer": [
+        "b",
+        "c"
+      ],
+      "explanation": "Evaluation must be grounded in system signals: CI checks and security signals such as code scanning results, both of which rulesets can enforce. The agent's claim (A) is not evidence; commit count (D) and log length (E) say nothing about correctness.",
+      "sources": [
+        "https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/manage-your-configuration/set-merge-protection"
+      ],
+      "takeaway": "Evaluate agents on system signals (checks, scans, reviews), never on the agent's confidence."
+    },
+    {
+      "id": "d4-root-cause",
+      "type": "single",
+      "domain": "D4",
+      "stem": "In every session, the cloud agent's log shows `dotnet: command not found`. It then spends several minutes trying to install the SDK, and some attempts are blocked by the firewall.\n\nWhat should you change first?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Add an instruction telling the agent which .NET version to use.",
+          "rationale": "Incorrect. Telling the agent which version to use doesn't install it, and the firewall may still block downloads."
+        },
+        {
+          "id": "b",
+          "text": "Add `actions/setup-dotnet` to the `copilot-setup-steps` job.",
+          "rationale": "Correct. It's an environment problem: install the SDK in `copilot-setup-steps` so every session starts with the right tools."
+        },
+        {
+          "id": "c",
+          "text": "Disable the cloud agent firewall for the repository.",
+          "rationale": "Incorrect. Disabling the firewall removes a security control to work around a setup gap."
+        },
+        {
+          "id": "d",
+          "text": "Switch the agent to a larger model.",
+          "rationale": "Incorrect. A different model can't install software that the environment doesn't provide."
+        }
+      ],
+      "answer": [
+        "b"
+      ],
+      "explanation": "This is an environment failure, not a reasoning failure, so fix the environment: tools the agent needs should be installed by `copilot-setup-steps`. Instructions (A) and a different model (D) don't install anything, and disabling the firewall (C) removes a security control to work around a setup gap.",
+      "sources": [
+        "https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/customize-the-agent-environment"
+      ],
+      "takeaway": "Classify the failure first. Environment failures are fixed in the environment, not in the prompt or the model."
+    },
+    {
+      "id": "d5-semantic-conflict",
+      "type": "single",
+      "domain": "D5",
+      "stem": "Several agents open pull requests in parallel. Each pull request passes CI on its own, but the default branch sometimes breaks after two of them are merged one after the other, even though git reported no conflicts. Agents open about forty pull requests a day, and the team doesn't want every merge to force the other open pull requests to update and be approved again by hand.\n\nWhat should you use?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A merge queue for the default branch.",
+          "rationale": "Correct. A merge queue tests each PR combined with everything queued ahead of it and merges in order, without manual update-and-reapprove cycles."
+        },
+        {
+          "id": "b",
+          "text": "\"Require branches to be up to date before merging\" with stale approvals dismissed.",
+          "rationale": "Incorrect. It does catch the problem, but each merge forces other open PRs to update, re-run CI and be re-approved, the churn the team wants to avoid."
+        },
+        {
+          "id": "c",
+          "text": "`concurrency` with `cancel-in-progress: true` on the CI workflow.",
+          "rationale": "Incorrect. Cancelling outdated runs saves time but never tests PRs together."
+        },
+        {
+          "id": "d",
+          "text": "More required approving reviews.",
+          "rationale": "Incorrect. More reviewers don't test the combination of changes."
+        }
+      ],
+      "answer": [
+        "a"
+      ],
+      "explanation": "The failures are semantic incompatibilities between pull requests that were each tested against an older default branch. A merge queue tests each pull request combined with everything ahead of it and merges in order, without manual update-and-reapprove loops. Option B also catches the problem but creates exactly the churn the team wants to avoid. C and D don't test the combination.",
+      "sources": [
+        "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue"
+      ],
+      "takeaway": "Each PR green, but `main` breaks after both merge → semantic conflict → up-to-date branches or, at scale, a merge queue."
+    },
+    {
+      "id": "d5-concurrency",
+      "type": "single",
+      "domain": "D5",
+      "stem": "Two agents can each trigger the workflow that deploys to the shared staging environment. Overlapping deployments have left staging in an inconsistent state. A deployment that has started must never be interrupted.\n\nWhich configuration should you add to the deploy job?",
+      "options": [
+        {
+          "id": "a",
+          "text": "`concurrency: { group: deploy-staging, cancel-in-progress: true }`",
+          "rationale": "Incorrect. A shared group serialises runs, but `cancel-in-progress: true` would interrupt a deployment that has started."
+        },
+        {
+          "id": "b",
+          "text": "`concurrency: { group: deploy-staging, cancel-in-progress: false }`",
+          "rationale": "Correct. The shared group allows one deployment at a time, and the running one finishes while the next waits."
+        },
+        {
+          "id": "c",
+          "text": "`concurrency: { group: ${{ github.run_id }}, cancel-in-progress: false }`",
+          "rationale": "Incorrect. A group keyed on `github.run_id` is unique per run, so nothing is ever serialised."
+        },
+        {
+          "id": "d",
+          "text": "`timeout-minutes: 30`",
+          "rationale": "Incorrect. A timeout limits duration; it doesn't stop two deployments overlapping."
+        }
+      ],
+      "answer": [
+        "b"
+      ],
+      "explanation": "A shared group serialises deployments, and `cancel-in-progress: false` lets the running one finish while the next waits. Option A would cancel a deployment mid-way. A group keyed on the run ID (C) is unique per run, so it never serialises anything.",
+      "sources": [
+        "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency"
+      ],
+      "takeaway": "Serialise without interrupting: shared concurrency group + cancel-in-progress: false."
+    },
+    {
+      "id": "d6-environments",
+      "type": "yesno",
+      "domain": "D6",
+      "scenario": "The repository `contoso/orders-api` has an environment named `production` with one required reviewer, deployment restricted to the `main` branch, and an environment secret named `AZURE_CLIENT_ID`. No repository or organisation secret with that name exists.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.",
+      "items": [
+        {
+          "id": "s1",
+          "statement": "A job that doesn't declare `environment: production` receives an empty value for `secrets.AZURE_CLIENT_ID`.",
+          "answer": "yes",
+          "explanation": "Environment secrets are only available to jobs that reference the environment, after its protection rules pass."
+        },
+        {
+          "id": "s2",
+          "statement": "If a workflow declares `environment: prodction`, GitHub stops the job because the environment doesn't exist.",
+          "answer": "no",
+          "explanation": "Referencing an environment that doesn't exist creates it, with no protection rules and no secrets."
+        },
+        {
+          "id": "s3",
+          "statement": "The required reviewer on `production` must approve before a pull request into `main` can be merged.",
+          "answer": "no",
+          "explanation": "Environment reviewers gate jobs that deploy to the environment, not pull request merges. Merges are gated by rulesets or branch protection."
+        }
+      ],
+      "sources": [
+        "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments",
+        "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments"
+      ],
+      "takeaway": "Environment secrets reach only jobs that declare the environment; misspelt names create unprotected environments; environments gate deploys, not merges."
+    },
+    {
+      "id": "d6-hook-ask",
+      "type": "single",
+      "domain": "D6",
+      "stem": "You add `.github/hooks/policy.json` with a `preToolUse` hook. For commands that match `az group delete`, the hook returns `{\"permissionDecision\": \"ask\"}`.\n\nWhat happens when GitHub Copilot cloud agent tries to run `az group delete -n rg-orders-test --yes`?",
+      "options": [
+        {
+          "id": "a",
+          "text": "The session pauses until a user approves the command in the pull request.",
+          "rationale": "Incorrect. The cloud agent runs non-interactively; nobody is there to answer an `ask`."
+        },
+        {
+          "id": "b",
+          "text": "The command runs, and a warning is added to the session log.",
+          "rationale": "Incorrect. The hook's decision is applied; the command doesn't run."
+        },
+        {
+          "id": "c",
+          "text": "The command is denied, because `ask` is treated as `deny` when no user is available to answer.",
+          "rationale": "Correct. In the cloud agent, `ask` is treated as `deny` because no user can answer."
+        },
+        {
+          "id": "d",
+          "text": "The hook is ignored, because the cloud agent only loads hooks from the user's home directory.",
+          "rationale": "Incorrect. The cloud agent loads hooks only from `.github/hooks/*.json` in the repository."
+        }
+      ],
+      "answer": [
+        "c"
+      ],
+      "explanation": "The cloud agent is non-interactive, so an `ask` decision is treated as `deny`. It loads hooks only from `.github/hooks/*.json` in the repository. Use `deny` with a reason that tells the agent to escalate.",
+      "sources": [
+        "https://docs.github.com/en/copilot/reference/hooks-reference"
+      ],
+      "takeaway": "Cloud agent hooks: only `.github/hooks/*.json`, bash only, and `ask` means deny."
+    },
+    {
+      "id": "d6-right-size",
+      "type": "single",
+      "domain": "D6",
+      "stem": "Every agent pull request requires two human approvals, including pull requests that only change files under `docs/`. Documentation updates now wait days. Code under `src/` handles payments.\n\nYou need to reduce delays without materially increasing risk.\n\nWhat should you do?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Remove all required reviews and rely on CI.",
+          "rationale": "Incorrect. Removing all reviews raises risk for the payments code under `src/`."
+        },
+        {
+          "id": "b",
+          "text": "Add the documentation agent to the ruleset bypass list.",
+          "rationale": "Incorrect. The bypass list lets an actor skip every rule. Never put agents on it."
+        },
+        {
+          "id": "c",
+          "text": "Require one approval for changes limited to `docs/`, verified by a required check on the changed paths, and keep code owner review for `src/`.",
+          "rationale": "Correct. Lower friction where risk is low, verified by an enforced path check, and keep strict review where risk is high."
+        },
+        {
+          "id": "d",
+          "text": "Keep the current rules and add more reviewers to the rota.",
+          "rationale": "Incorrect. It keeps an approval that adds delay without materially reducing risk."
+        }
+      ],
+      "answer": [
+        "c"
+      ],
+      "explanation": "The study guide asks you to classify actions by risk to right-size human intervention, and to minimise approvals that don't materially reduce risk. Option C lowers friction where the risk is low and keeps strict review where it is high, using an enforced path check. A and B remove controls; D keeps an approval that adds little.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/gh-600"
+      ],
+      "takeaway": "Right-size human intervention by risk; remove approvals that don't reduce risk, keep them where mistakes are expensive."
+    },
+    {
+      "id": "case-fabrikam",
+      "type": "case",
+      "title": "Case study: Fabrikam deployments",
+      "scenario": "**Overview.** Fabrikam builds an order platform in .NET and deploys it to Azure from GitHub Actions. Agents (GitHub Copilot cloud agent and a custom deployment-checker agent) open pull requests against the repository `fabrikam/platform`.\n\n**Current state.**\n- Deploys run from `.github/workflows/deploy.yml` on pushes to `main`.\n- The Azure service principal secret is stored as a repository Actions secret and used by every workflow.\n- CODEOWNERS contains only `* @fabrikam/developers`.\n\n**Requirements.**\n- No long-lived Azure credentials may be stored in GitHub.\n- Production deployments must be approved by the operations team.\n- An agent must not be able to weaken the deployment workflow without the platform team noticing.\n- Controls must not slow down ordinary code changes more than necessary.",
+      "questions": [
+        {
+          "id": "q1",
+          "type": "single",
+          "domain": "D6",
+          "stem": "How should Fabrikam authenticate the deploy job to Azure?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Move the service principal secret to an organisation secret available to selected repositories.",
+              "rationale": "Incorrect. It's still a long-lived credential stored in GitHub, and moving it to org level widens who can use it."
+            },
+            {
+              "id": "b",
+              "text": "Use OpenID Connect with `id-token: write`, and an Azure federated credential bound to the `production` environment, which has the operations team as required reviewers.",
+              "rationale": "Correct. OIDC issues short-lived tokens, so nothing long-lived is stored. A federated credential bound to the environment means Azure only trusts jobs that passed the operations team's approval."
+            },
+            {
+              "id": "c",
+              "text": "Store the secret as an Agents secret so that only the agent can deploy.",
+              "rationale": "Incorrect. Agents secrets are for the cloud agent's session. It doesn't remove the long-lived credential, and the agent shouldn't deploy."
+            },
+            {
+              "id": "d",
+              "text": "Encrypt the secret and commit it to the repository.",
+              "rationale": "Incorrect. Committing an encrypted secret still stores a long-lived credential, and the decryption key has to live somewhere."
+            }
+          ],
+          "answer": [
+            "b"
+          ],
+          "explanation": "OIDC issues short-lived tokens, so no long-lived credential is stored. Binding the federated credential to the environment means Azure only trusts jobs that ran through `production`, which requires the operations team's approval.",
+          "takeaway": "No stored cloud credentials: OIDC + federated credential bound to an environment with required reviewers."
+        },
+        {
+          "id": "q2",
+          "type": "single",
+          "domain": "D1",
+          "stem": "Which change addresses the requirement that agents must not weaken the deployment workflow unnoticed, while keeping ordinary code changes fast?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Add `/.github/ @fabrikam/platform` after the `*` line in CODEOWNERS, and require review from code owners in the ruleset for `main`.",
+              "rationale": "Correct. The last matching pattern wins, so the specific path goes after `*`, and CODEOWNERS only blocks merges when code owner review is required."
+            },
+            {
+              "id": "b",
+              "text": "Add `/.github/ @fabrikam/platform` before the `*` line in CODEOWNERS.",
+              "rationale": "Incorrect. Placed before `*`, the line is overridden by `*`, which matches everything and comes last."
+            },
+            {
+              "id": "c",
+              "text": "Require two approvals for every pull request.",
+              "rationale": "Incorrect. Two approvals on every PR slows ordinary changes, which the requirements say to avoid."
+            },
+            {
+              "id": "d",
+              "text": "Tell agents in `copilot-instructions.md` not to edit files under `.github/`.",
+              "rationale": "Incorrect. An instruction isn't enforced."
+            }
+          ],
+          "answer": [
+            "a"
+          ],
+          "explanation": "In CODEOWNERS the last matching pattern wins, so the specific path must come after `*`. CODEOWNERS only blocks merges when the ruleset requires code owner review. Placing it before `*` (B) is overridden by `*`. Two approvals for everything (C) slows ordinary changes. Instructions (D) aren't enforced.",
+          "takeaway": "CODEOWNERS: wildcard first, specific paths after, and turn on code owner review in the ruleset."
+        }
+      ],
+      "sources": [
+        "https://docs.github.com/en/actions/concepts/security/openid-connect",
+        "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners"
+      ]
+    }
+  ]
+}

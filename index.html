@@ -1,0 +1,979 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>GH-600 Exam Room</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: an exam-delivery shell. A dark status bar on top (exam, question n of N, timer),
+   one question per screen in a calm reading column, and a fixed action bar at the bottom
+   (Previous · Mark for review · Review · Next). Start and results screens reuse the column. */
+:root {
+  --bg: #eef1f5;
+  --paper: #ffffff;
+  --ink: #1c2430;
+  --muted: #5b6676;
+  --line: #d3d9e2;
+  --soft: #f4f6f9;
+  --bar: #1f2b3a;
+  --bar-ink: #e9eef5;
+  --accent: #1d5fa8;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2edf8;
+  --flag: #a85d00;
+  --flag-soft: #fbeedc;
+  --ok: #187a3c;
+  --ok-soft: #dff2e5;
+  --bad: #b3261e;
+  --bad-soft: #fae3e1;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0d6;
+  --code-bg: #f3f5f8;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141b; --paper: #171e27; --ink: #e3e9f0; --muted: #98a4b3; --line: #2c3644; --soft: #1c2430;
+    --bar: #0a0e13; --bar-ink: #dfe6ee; --accent: #5ea2ea; --accent-ink: #0b1520; --accent-soft: #16283d;
+    --flag: #e7a54b; --flag-soft: #33240f; --ok: #4cc27a; --ok-soft: #132a1c; --bad: #f07067; --bad-soft: #351816;
+    --warn: #e0b04a; --warn-soft: #2f2610; --code-bg: #121820; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141b; --paper: #171e27; --ink: #e3e9f0; --muted: #98a4b3; --line: #2c3644; --soft: #1c2430;
+  --bar: #0a0e13; --bar-ink: #dfe6ee; --accent: #5ea2ea; --accent-ink: #0b1520; --accent-soft: #16283d;
+  --flag: #e7a54b; --flag-soft: #33240f; --ok: #4cc27a; --ok-soft: #132a1c; --bad: #f07067; --bad-soft: #351816;
+  --warn: #e0b04a; --warn-soft: #2f2610; --code-bg: #121820; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bar); }
+a { color: var(--accent); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font-family: var(--font-mono); font-size: 0.86em; background: var(--code-bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+h1, h2, h3 { margin: 0; text-wrap: balance; line-height: 1.25; }
+p { margin: 0; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 0.88rem; }
+.label { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+/* Status bar */
+.statusbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bar); color: var(--bar-ink); }
+.statusbar .inner { max-width: 980px; margin: 0 auto; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; }
+.statusbar .exam { font-weight: 700; letter-spacing: 0.01em; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.statusbar .meta { display: flex; gap: 14px; align-items: center; font-size: 0.92rem; }
+.timer { font-family: var(--font-mono); font-variant-numeric: tabular-nums; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 4px; padding: 2px 8px; }
+.timer.low { background: var(--bad); border-color: var(--bad); color: #fff; }
+
+/* Page column */
+main { max-width: 980px; margin: 0 auto; padding-block: 22px 120px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 18px; }
+.panel { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel h2 { font-size: 1.2rem; }
+.row { display: flex; gap: 10px 16px; flex-wrap: wrap; align-items: center; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > span { font-size: 0.88rem; font-weight: 600; }
+input[type="number"], textarea, select { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; min-width: 0; }
+textarea { font-family: var(--font-mono); font-size: 0.82rem; min-height: 160px; width: 100%; resize: vertical; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.check-inline { display: inline-flex; gap: 6px; align-items: center; font-size: 0.95rem; }
+.segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.segmented label { padding: 6px 14px; cursor: pointer; font-size: 0.95rem; }
+.segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.segmented label:has(input:checked) { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.segmented label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+button { font: inherit; font-weight: 600; border-radius: 4px; padding: 8px 16px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
+button.secondary { background: var(--paper); color: var(--accent); }
+button.quiet { background: transparent; border-color: var(--line); color: var(--ink); font-weight: 500; }
+button.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+.pill { display: inline-block; font-size: 0.78rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.idle { background: var(--soft); color: var(--muted); }
+.notice { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: 10px 12px; border-radius: 4px; font-size: 0.95rem; }
+.notice.error { border-color: var(--bad); background: var(--bad-soft); }
+.notice.info { border-color: var(--accent); background: var(--accent-soft); }
+.notice ul { margin: 6px 0 0; padding-left: 20px; }
+
+/* Bank summary */
+.domain-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.domain-table td { padding: 5px 6px; border-bottom: 1px solid var(--line); }
+.domain-table td.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+
+/* Question screen */
+.qhead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.qhead .qnum { font-weight: 700; font-size: 1.05rem; }
+.scenario { background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; max-height: 46vh; overflow: auto; }
+.prose { display: flex; flex-direction: column; gap: 10px; max-width: 75ch; }
+.prose ul { margin: 0; padding-left: 22px; }
+.instruction { font-weight: 600; }
+.options { display: flex; flex-direction: column; gap: 8px; }
+.opt { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; cursor: pointer; background: var(--paper); }
+.opt:hover { border-color: var(--accent); }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.opt input { margin: 4px 0 0; width: 18px; height: 18px; accent-color: var(--accent); }
+.opt .letter { font-weight: 700; margin-right: 6px; }
+.opt.correct { border-color: var(--ok); background: var(--ok-soft); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.yn { display: flex; gap: 10px; flex-wrap: wrap; }
+.yn .opt { grid-template-columns: 26px auto; min-width: 120px; }
+.order-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.order-item { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; background: var(--paper); }
+.order-item .pos { font-family: var(--font-mono); font-weight: 600; color: var(--muted); text-align: center; }
+.order-item .moves { display: flex; gap: 6px; }
+.order-item button { padding: 4px 10px; }
+.hot { background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.86rem; line-height: 1.9; white-space: pre; margin: 0; }
+.hot select { font-family: var(--font-mono); font-size: 0.86rem; padding: 1px 4px; border-color: var(--accent); }
+.hot select.correct { border-color: var(--ok); background: var(--ok-soft); }
+.hot select.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.feedback { border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); background: var(--soft); }
+.feedback.ok { border-color: var(--ok); }
+.feedback.bad { border-color: var(--bad); }
+.why { grid-column: 2; font-size: 0.9rem; line-height: 1.45; padding-top: 6px; border-top: 1px dashed var(--line); margin-top: 4px; }
+.why strong { margin-right: 4px; }
+.opt.correct .why strong { color: var(--ok); }
+.opt.wrong .why strong, .opt.missed .why strong { color: var(--bad); }
+.opt.missed { border-color: var(--line); }
+.takeaway { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 8px 12px; border-radius: 4px; }
+.learnbar { display: flex; gap: 10px; flex-wrap: wrap; }
+.why-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 0.92rem; }
+.sources { display: flex; flex-direction: column; gap: 2px; font-size: 0.86rem; overflow-wrap: anywhere; }
+
+/* Bottom action bar */
+.actionbar { position: fixed; inset: auto 0 0 0; z-index: 20; background: var(--paper); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.actionbar .inner { max-width: 980px; margin: 0 auto; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.actionbar .spacer { flex: 1 1 auto; }
+.flag-btn[aria-pressed="true"] { background: var(--flag-soft); border-color: var(--flag); color: var(--flag); }
+
+/* Review grid */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.88rem; }
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+.tile { position: relative; border: 1px solid var(--line); border-radius: 4px; padding: 8px 4px; text-align: center; font-family: var(--font-mono); font-weight: 600; background: var(--paper); color: var(--ink); }
+.tile.answered { background: var(--accent-soft); border-color: var(--accent); }
+.tile.unanswered { background: var(--paper); border-style: dashed; }
+.tile.flagged::after { content: ""; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--flag); }
+.tile.locked { opacity: 0.55; cursor: not-allowed; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); vertical-align: -1px; margin-right: 4px; }
+
+/* Results */
+.score { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+.score .big { font-family: var(--font-mono); font-size: 2.6rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.bar { position: relative; height: 10px; background: var(--soft); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+.bar > span { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+.bar .mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+.dom-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) minmax(90px, 2fr) 64px; gap: 10px; align-items: center; font-size: 0.92rem; }
+.result-item { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.result-item summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; list-style: none; }
+.result-item summary::-webkit-details-marker { display: none; }
+.result-item .stem-preview { min-width: 0; flex: 1 1 260px; }
+.ans-grid { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; font-size: 0.92rem; }
+.history td, .history th { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; font-size: 0.9rem; white-space: nowrap; }
+.history th { font-weight: 600; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+details.help summary { cursor: pointer; font-weight: 600; }
+pre.example { background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.8rem; margin: 0; }
+@media (max-width: 560px) {
+  .statusbar .exam { flex-basis: 100%; }
+  .dom-row { grid-template-columns: 34px minmax(0, 1fr) 56px; }
+  .dom-row .bar { grid-column: 1 / -1; }
+  .actionbar button { padding: 8px 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+</style>
+
+<header class="statusbar" id="statusbar">
+  <div class="inner">
+    <div class="exam" id="sbTitle">GH-600 · Developing in Agentic AI Systems</div>
+    <div class="meta">
+      <span id="sbCount" class="mono"></span>
+      <span id="sbTimer" class="timer" hidden></span>
+    </div>
+  </div>
+</header>
+
+<main id="main"></main>
+
+<nav class="actionbar" id="actionbar" hidden aria-label="Exam navigation">
+  <div class="inner">
+    <button class="quiet" id="btnPrev" type="button">‹ Previous</button>
+    <button class="quiet flag-btn" id="btnFlag" type="button" aria-pressed="false">Mark for review</button>
+    <span class="spacer"></span>
+    <button class="secondary" id="btnCheck" type="button" hidden>Check answer</button>
+    <button class="quiet" id="btnReview" type="button">Review</button>
+    <button id="btnNext" type="button">Next ›</button>
+  </div>
+</nav>
+
+<script type="application/json" id="embeddedBank">{"title": "GH-600 practice bank · set 1", "version": 1, "author": "Claude, checked against the GH-600 study guide and GitHub Docs (November 2026)", "passingScore": 700, "durationMinutes": 45, "domains": {"D1": "Agent architecture and SDLC", "D2": "Tool use and environment interaction", "D3": "Memory, state and execution", "D4": "Evaluation, error analysis and tuning", "D5": "Multi-agent coordination", "D6": "Guardrails and accountability"}, "questions": [{"id": "d1-plan-gate", "type": "single", "domain": "D1", "stem": "Contoso wants GitHub Copilot cloud agent to change the rounding rules used across twelve files in the **Payments** module. A wrong change has caused an incident before.\n\nYou need to ensure that no code is written until a person has approved how the change will be made. The solution must rely on controls that the agent cannot ignore.\n\nWhat should you do?", "options": [{"id": "a", "text": "Add \"Always ask for approval before changing code\" to `.github/copilot-instructions.md`.", "rationale": "Incorrect. An instruction is guidance the model may ignore, especially under pressure to finish. It isn't an enforced approval point."}, {"id": "b", "text": "Increase the required approving reviews on the default branch from one to three.", "rationale": "Incorrect. Extra reviewers only act once code already exists in a pull request. The requirement is to stop code being written before the plan is approved."}, {"id": "c", "text": "Use a planner custom agent whose `tools` are limited to read and search to produce the plan in a pull request, require that plan to be approved and merged, and only then assign the implementation.", "rationale": "Correct. Restricting `tools` in the frontmatter removes the ability to edit, and a reviewed, merged plan is an explicit human approval before implementation is assigned."}, {"id": "d", "text": "Assign the issue to Copilot and ask it in a pull request comment to wait until a reviewer replies.", "rationale": "Incorrect. A comment is just another instruction. Nothing in GitHub forces the agent to wait for the reply."}], "answer": ["c"], "explanation": "Instructions and comments (A, D) are guidance the model may not follow. Limiting the planner's `tools` in its frontmatter means it cannot edit files at all, and making the plan a reviewed, merged artifact creates an explicit approval point before implementation starts. More reviewers (B) add review after the code exists; they don't stop code being written first.", "sources": ["https://docs.github.com/en/copilot/reference/custom-agents-configuration", "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/gh-600"], "takeaway": "Separate planning from execution with a platform restriction (read-only tools) plus a reviewed artifact, not with instructions."}, {"id": "d1-skipped-check", "type": "multiple", "select": 2, "domain": "D1", "stem": "The default branch requires the status checks `build` and `test`. In a pull request, an agent adds this condition to the `test` job in `.github/workflows/ci.yml`:\n\n`if: ${{ !contains(github.event.pull_request.title, '[skip-tests]') }}`\n\nThe agent also gives the pull request a title that contains `[skip-tests]`. The `test` job is reported as skipped.\n\nWhich two changes together prevent a change like this from being merged unnoticed? Each correct answer presents part of the solution.", "options": [{"id": "a", "text": "Add an aggregator job with `if: always()` that fails unless every job it needs succeeded, and make it the only required status check.", "rationale": "Correct. A required check that is skipped counts as passing. An aggregator with `if: always()` converts 'skipped' into a failure of the single required check."}, {"id": "b", "text": "Enable \"Require branches to be up to date before merging\".", "rationale": "Incorrect. Up-to-date branches retest the PR against the latest `main`, but a skipped job is still skipped."}, {"id": "c", "text": "Make `.github/` owned by the platform team in CODEOWNERS and require review from code owners in the ruleset.", "rationale": "Correct. PR workflows run the version in the PR branch, so a workflow edit must be reviewed by an owner of `.github/`. CODEOWNERS only blocks merges when code owner review is required."}, {"id": "d", "text": "Enable \"Dismiss stale pull request approvals when new commits are pushed\".", "rationale": "Incorrect. Dismissing stale approvals reacts to new commits; it doesn't detect that a job was skipped."}, {"id": "e", "text": "Add `timeout-minutes: 10` to the `test` job.", "rationale": "Incorrect. A timeout limits run time; a skipped job never starts, so it has no effect."}], "answer": ["a", "c"], "explanation": "A skipped required check counts as passing. An aggregator job turns 'skipped' into a failure of the one required check (A). Because pull request workflows run the version of the workflow in the PR branch, workflow edits must also be reviewed by an owner of `.github/` (C). Up-to-date branches (B) and stale-approval dismissal (D) don't detect a skipped job; a timeout (E) is unrelated.", "sources": ["https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/troubleshooting-required-status-checks", "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners"], "takeaway": "Skipped = pass, missing = blocked. Defend with an aggregator job plus mandatory review of `.github/`."}, {"id": "d2-agent-secrets", "type": "yesno", "domain": "D2", "scenario": "Fabrikam uses GitHub Copilot cloud agent in the repository `fabrikam/billing`. CI restores NuGet packages from a private feed by using a repository secret named `NUGET_TOKEN` stored under **Settings > Secrets and variables > Actions**. The team also wants the agent to use a Jira MCP server that needs an API key.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.", "items": [{"id": "s1", "statement": "During its session, the cloud agent can read `NUGET_TOKEN` from the repository's Actions secrets.", "answer": "no", "explanation": "The cloud agent does not have access to GitHub Actions, Codespaces or Dependabot secrets. Secrets it needs must be created under **Agents**."}, {"id": "s2", "statement": "A secret named `COPILOT_MCP_JIRA_TOKEN` created under **Agents** is passed to MCP servers that reference it, but is not exposed to the agent's shell.", "answer": "yes", "explanation": "Agents secrets whose names start with `COPILOT_MCP_` are only made available to MCP server configurations that reference them."}, {"id": "s3", "statement": "If the job in `.github/workflows/copilot-setup-steps.yml` is named `setup`, Copilot runs it before the agent starts working.", "answer": "no", "explanation": "The job must be named `copilot-setup-steps`; otherwise Copilot ignores it."}], "sources": ["https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/configure-secrets-and-variables", "https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/customize-the-agent-environment"], "takeaway": "The cloud agent only sees Agents secrets; COPILOT_MCP_ secrets go only to MCP servers; the setup job must be named copilot-setup-steps."}, {"id": "d2-sarif-permissions", "type": "dropdown", "domain": "D2", "stem": "You are writing a workflow that analyses pull requests with a third-party scanner and uploads the results as SARIF so they appear as code scanning alerts. Pull requests can come from forks. The workflow must follow least privilege and must not expose secrets to code from forks.\n\nHow should you complete the workflow? Select the correct option for each box.", "template": "on:\n  [[trigger]]:\n    branches: [main]\n\npermissions:\n  contents: [[contents]]\n  security-events: [[security]]\n\njobs:\n  scan:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: ./scanner --format sarif --out results.sarif\n      - uses: github/codeql-action/upload-sarif@v3\n        with:\n          sarif_file: results.sarif", "blanks": {"trigger": {"options": ["pull_request", "pull_request_target", "workflow_run"], "answer": "pull_request", "rationale": "`pull_request` gives fork PRs a read-only token and no secrets. `pull_request_target` would run with secrets and write access, and `workflow_run` isn't the PR trigger."}, "contents": {"options": ["read", "write", "none"], "answer": "read", "rationale": "Checkout only needs to read the code. `write` would let a compromised step push changes."}, "security": {"options": ["write", "read", "none"], "answer": "write", "rationale": "Uploading SARIF creates code scanning alerts, which needs `security-events: write`."}}, "explanation": "`pull_request` runs PRs from forks with a read-only token and no secrets, so fork code can't steal anything; `pull_request_target` would run with secrets and write access. Checkout needs `contents: read`, and uploading SARIF needs `security-events: write`. Note that SARIF uploads from fork PRs are limited by the read-only token; the point here is choosing the safe trigger and minimal scopes.", "sources": ["https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github", "https://docs.github.com/en/actions/reference/security/secure-use"], "takeaway": "Safe trigger for untrusted PRs, then only the scopes each step needs."}, {"id": "d2-github-token-pr", "type": "single", "domain": "D2", "stem": "A scheduled workflow updates generated API clients and opens a pull request by using `GITHUB_TOKEN`. CI on those pull requests sits in \"Workflow awaiting approval\" until a maintainer approves it, which delays delivery.\n\nYou need CI to start automatically on these pull requests. The solution must follow least privilege.\n\nWhat should you do?", "options": [{"id": "a", "text": "Change the CI workflow trigger to `pull_request_target`.", "rationale": "Incorrect. `pull_request_target` runs with secrets and a write token in the base context. It's riskier and isn't how you make PRs created by automation run normal CI."}, {"id": "b", "text": "Create the pull request with an installation token from a GitHub App that is installed only on this repository with the permissions it needs.", "rationale": "Correct. Events from a GitHub App installation token trigger workflows normally, and the token is short-lived and scoped to the repository and permissions you grant."}, {"id": "c", "text": "Create the pull request with a classic personal access token that belongs to a repository administrator.", "rationale": "Incorrect. It would trigger CI, but a classic PAT of an admin is long-lived and far broader than needed: it violates least privilege."}, {"id": "d", "text": "Set `permissions: write-all` in the scheduled workflow.", "rationale": "Incorrect. The token's permissions don't change the rule that `GITHUB_TOKEN` events don't start normal runs. It only widens privilege."}], "answer": ["b"], "explanation": "Pull requests opened or updated with `GITHUB_TOKEN` get workflow runs that wait for approval. A short-lived, narrowly scoped GitHub App token triggers normal CI. An admin's PAT (C) works but is long-lived and over-privileged. `write-all` (D) doesn't change the triggering rule, and `pull_request_target` (A) adds risk.", "sources": ["https://docs.github.com/en/actions/concepts/security/github_token"], "takeaway": "Automation that must trigger normal CI should use a GitHub App token, not GITHUB_TOKEN or a personal token."}, {"id": "d2-agent-flow", "type": "order", "domain": "D2", "stem": "A developer assigns an issue to GitHub Copilot cloud agent in a repository that has `copilot-setup-steps.yml`, a CI workflow on `pull_request`, and a ruleset that requires checks and one approving review.\n\nPut the events in the order in which they happen.", "items": [{"id": "setup", "text": "The `copilot-setup-steps` job prepares the agent's environment."}, {"id": "work", "text": "The agent changes code and pushes commits to its own `copilot/` branch."}, {"id": "approve-runs", "text": "A user with write access approves the pending workflow runs."}, {"id": "checks", "text": "Required checks report results on the pull request's head commit."}, {"id": "review", "text": "A reviewer who did not request the work approves the pull request."}, {"id": "merge", "text": "A person merges the pull request."}], "answer": ["setup", "work", "approve-runs", "checks", "review", "merge"], "explanation": "Setup steps run before the agent starts. The agent writes only to its own branch. Workflows on its pull requests wait for approval, then produce checks. The person who asked Copilot for the work can't approve it, and the agent can't merge.", "sources": ["https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-cloud-agent", "https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/risks-and-mitigations"], "takeaway": "Setup → agent works on its branch → humans approve runs → checks → independent review → human merge."}, {"id": "d2-mcp-tools", "type": "single", "domain": "D2", "stem": "You add a Jira MCP server to the cloud agent's MCP configuration for a repository. The server exposes tools to read, create, transition and delete issues. The agent only needs to read issue details.\n\nYou need to apply least privilege to the agent's use of this server.\n\nWhat should you do?", "options": [{"id": "a", "text": "Add a sentence to the custom agent's instructions telling it to only read issues.", "rationale": "Incorrect. Instructions are guidance. The agent could still call the delete tool."}, {"id": "b", "text": "Allow the Jira host in the cloud agent firewall and block the other Atlassian hosts.", "rationale": "Incorrect. The firewall controls which hosts are reachable. Read and delete calls go to the same host, so it can't tell them apart."}, {"id": "c", "text": "In the server's configuration, replace `\"tools\": [\"*\"]` with an explicit list that contains only the read tool.", "rationale": "Correct. The `tools` list in the MCP server configuration is the allowlist of callable tools; `*` means all."}, {"id": "d", "text": "Store the Jira API key as an Agents secret named `COPILOT_MCP_JIRA_KEY`.", "rationale": "Incorrect. The prefix keeps the key away from the agent's shell, but it doesn't restrict which tools the agent can call."}], "answer": ["c"], "explanation": "The `tools` list in the MCP configuration decides which of the server's tools the agent can call; `*` allows all of them. Instructions (A) are guidance. The firewall (B) controls network destinations, not which tools on the same host are used. The `COPILOT_MCP_` prefix (D) protects the key but doesn't limit tool use.", "sources": ["https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/extend-coding-agent-with-mcp"], "takeaway": "Least privilege for MCP = list the specific tools, never `*`."}, {"id": "d3-resume-state", "type": "single", "domain": "D3", "stem": "An agent implements a multi-step migration across several sessions. When a session times out, the next session repeats steps that were already done and sometimes reverses earlier decisions.\n\nYou need the next session to resume reliably and remain auditable.\n\nWhat should you do?", "options": [{"id": "a", "text": "Store progress in `actions/cache` so that the next run restores it.", "rationale": "Incorrect. A cache can be evicted and is meant for speeding up dependencies, not for holding authoritative state."}, {"id": "b", "text": "Keep a progress file and decision log on the working branch, and a checklist in the pull request description, and instruct the agent to read and update them at the start and end of each session.", "rationale": "Correct. A versioned progress file and decision log on the branch, plus a checklist in the PR, survive across sessions and can be reviewed."}, {"id": "c", "text": "Increase the session timeout so the work completes in a single session.", "rationale": "Incorrect. A longer timeout postpones the problem. The next interruption still loses state."}, {"id": "d", "text": "Ask the agent to summarise its progress in its final chat message.", "rationale": "Incorrect. A chat message isn't a durable, structured record the next session can reliably read and update."}], "answer": ["b"], "explanation": "Durable, versioned artifacts on the branch and in the pull request survive sessions and can be reviewed. A cache (A) can be evicted and isn't meant to hold state. A longer timeout (C) doesn't solve resumption. A chat message (D) isn't a durable, structured record.", "sources": ["https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/"], "takeaway": "State that must survive sessions belongs in durable, reviewable artifacts: files on the branch, the PR, issues."}, {"id": "d3-memory-stale", "type": "single", "domain": "D3", "stem": "Your team uses Copilot Memory. A developer worries that a fact Copilot stored months ago about the repository's logging library could be applied after the code has changed.\n\nWhich statement describes how Copilot Memory reduces this risk?", "options": [{"id": "a", "text": "Memories are stored with citations to code, are checked against the current branch before they are used, and are deleted automatically after a period without use.", "rationale": "Correct. Repository facts are stored with code citations, checked against the current branch before use, and deleted after 28 days without use."}, {"id": "b", "text": "Memories are deleted every time a pull request is merged into the default branch.", "rationale": "Incorrect. Merging a pull request doesn't clear Copilot Memory."}, {"id": "c", "text": "Memories can only be created by repository administrators, who review them weekly.", "rationale": "Incorrect. Memories aren't created only by administrators, and there's no weekly review process."}, {"id": "d", "text": "Memories are kept only for the duration of a single agent session.", "rationale": "Incorrect. The point of Copilot Memory is to persist across sessions."}], "answer": ["a"], "explanation": "Copilot Memory stores repository facts with citations, checks those citations against the current branch before relying on them, and deletes entries that go unused for 28 days (the timer may reset when an entry is validated and used). The other options describe mechanisms Copilot Memory doesn't use.", "sources": ["https://docs.github.com/en/copilot/concepts/agents/copilot-memory"], "takeaway": "Copilot Memory guards against staleness with citation checks and automatic expiry."}, {"id": "d4-objective-signals", "type": "multiple", "select": 2, "domain": "D4", "stem": "You are defining what must be true before an agent's pull request can be merged. The gate must rely on objective evidence produced by the system rather than on the agent's own assessment.\n\nWhich two signals should you use? Each correct answer presents part of the solution.", "options": [{"id": "a", "text": "The agent's statement in the pull request that all tests pass.", "rationale": "Incorrect. That's the agent's own claim, not evidence produced by the system."}, {"id": "b", "text": "Required status checks reported by the repository's CI workflow.", "rationale": "Correct. Required checks are objective results from your CI, and a ruleset can enforce them."}, {"id": "c", "text": "Code scanning results with no new alerts at or above the configured severity.", "rationale": "Correct. Code scanning results are an objective security signal and can be enforced through code scanning merge protection."}, {"id": "d", "text": "The number of commits in the pull request.", "rationale": "Incorrect. Commit count says nothing about whether the change is correct or safe."}, {"id": "e", "text": "The length of the agent's session log.", "rationale": "Incorrect. The length of a log isn't a quality measure."}], "answer": ["b", "c"], "explanation": "Evaluation must be grounded in system signals: CI checks and security signals such as code scanning results, both of which rulesets can enforce. The agent's claim (A) is not evidence; commit count (D) and log length (E) say nothing about correctness.", "sources": ["https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/manage-your-configuration/set-merge-protection"], "takeaway": "Evaluate agents on system signals (checks, scans, reviews), never on the agent's confidence."}, {"id": "d4-root-cause", "type": "single", "domain": "D4", "stem": "In every session, the cloud agent's log shows `dotnet: command not found`. It then spends several minutes trying to install the SDK, and some attempts are blocked by the firewall.\n\nWhat should you change first?", "options": [{"id": "a", "text": "Add an instruction telling the agent which .NET version to use.", "rationale": "Incorrect. Telling the agent which version to use doesn't install it, and the firewall may still block downloads."}, {"id": "b", "text": "Add `actions/setup-dotnet` to the `copilot-setup-steps` job.", "rationale": "Correct. It's an environment problem: install the SDK in `copilot-setup-steps` so every session starts with the right tools."}, {"id": "c", "text": "Disable the cloud agent firewall for the repository.", "rationale": "Incorrect. Disabling the firewall removes a security control to work around a setup gap."}, {"id": "d", "text": "Switch the agent to a larger model.", "rationale": "Incorrect. A different model can't install software that the environment doesn't provide."}], "answer": ["b"], "explanation": "This is an environment failure, not a reasoning failure, so fix the environment: tools the agent needs should be installed by `copilot-setup-steps`. Instructions (A) and a different model (D) don't install anything, and disabling the firewall (C) removes a security control to work around a setup gap.", "sources": ["https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/customize-the-agent-environment"], "takeaway": "Classify the failure first. Environment failures are fixed in the environment, not in the prompt or the model."}, {"id": "d5-semantic-conflict", "type": "single", "domain": "D5", "stem": "Several agents open pull requests in parallel. Each pull request passes CI on its own, but the default branch sometimes breaks after two of them are merged one after the other, even though git reported no conflicts. Agents open about forty pull requests a day, and the team doesn't want every merge to force the other open pull requests to update and be approved again by hand.\n\nWhat should you use?", "options": [{"id": "a", "text": "A merge queue for the default branch.", "rationale": "Correct. A merge queue tests each PR combined with everything queued ahead of it and merges in order, without manual update-and-reapprove cycles."}, {"id": "b", "text": "\"Require branches to be up to date before merging\" with stale approvals dismissed.", "rationale": "Incorrect. It does catch the problem, but each merge forces other open PRs to update, re-run CI and be re-approved, the churn the team wants to avoid."}, {"id": "c", "text": "`concurrency` with `cancel-in-progress: true` on the CI workflow.", "rationale": "Incorrect. Cancelling outdated runs saves time but never tests PRs together."}, {"id": "d", "text": "More required approving reviews.", "rationale": "Incorrect. More reviewers don't test the combination of changes."}], "answer": ["a"], "explanation": "The failures are semantic incompatibilities between pull requests that were each tested against an older default branch. A merge queue tests each pull request combined with everything ahead of it and merges in order, without manual update-and-reapprove loops. Option B also catches the problem but creates exactly the churn the team wants to avoid. C and D don't test the combination.", "sources": ["https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue"], "takeaway": "Each PR green, but `main` breaks after both merge → semantic conflict → up-to-date branches or, at scale, a merge queue."}, {"id": "d5-concurrency", "type": "single", "domain": "D5", "stem": "Two agents can each trigger the workflow that deploys to the shared staging environment. Overlapping deployments have left staging in an inconsistent state. A deployment that has started must never be interrupted.\n\nWhich configuration should you add to the deploy job?", "options": [{"id": "a", "text": "`concurrency: { group: deploy-staging, cancel-in-progress: true }`", "rationale": "Incorrect. A shared group serialises runs, but `cancel-in-progress: true` would interrupt a deployment that has started."}, {"id": "b", "text": "`concurrency: { group: deploy-staging, cancel-in-progress: false }`", "rationale": "Correct. The shared group allows one deployment at a time, and the running one finishes while the next waits."}, {"id": "c", "text": "`concurrency: { group: ${{ github.run_id }}, cancel-in-progress: false }`", "rationale": "Incorrect. A group keyed on `github.run_id` is unique per run, so nothing is ever serialised."}, {"id": "d", "text": "`timeout-minutes: 30`", "rationale": "Incorrect. A timeout limits duration; it doesn't stop two deployments overlapping."}], "answer": ["b"], "explanation": "A shared group serialises deployments, and `cancel-in-progress: false` lets the running one finish while the next waits. Option A would cancel a deployment mid-way. A group keyed on the run ID (C) is unique per run, so it never serialises anything.", "sources": ["https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency"], "takeaway": "Serialise without interrupting: shared concurrency group + cancel-in-progress: false."}, {"id": "d6-environments", "type": "yesno", "domain": "D6", "scenario": "The repository `contoso/orders-api` has an environment named `production` with one required reviewer, deployment restricted to the `main` branch, and an environment secret named `AZURE_CLIENT_ID`. No repository or organisation secret with that name exists.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.", "items": [{"id": "s1", "statement": "A job that doesn't declare `environment: production` receives an empty value for `secrets.AZURE_CLIENT_ID`.", "answer": "yes", "explanation": "Environment secrets are only available to jobs that reference the environment, after its protection rules pass."}, {"id": "s2", "statement": "If a workflow declares `environment: prodction`, GitHub stops the job because the environment doesn't exist.", "answer": "no", "explanation": "Referencing an environment that doesn't exist creates it, with no protection rules and no secrets."}, {"id": "s3", "statement": "The required reviewer on `production` must approve before a pull request into `main` can be merged.", "answer": "no", "explanation": "Environment reviewers gate jobs that deploy to the environment, not pull request merges. Merges are gated by rulesets or branch protection."}], "sources": ["https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments", "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments"], "takeaway": "Environment secrets reach only jobs that declare the environment; misspelt names create unprotected environments; environments gate deploys, not merges."}, {"id": "d6-hook-ask", "type": "single", "domain": "D6", "stem": "You add `.github/hooks/policy.json` with a `preToolUse` hook. For commands that match `az group delete`, the hook returns `{\"permissionDecision\": \"ask\"}`.\n\nWhat happens when GitHub Copilot cloud agent tries to run `az group delete -n rg-orders-test --yes`?", "options": [{"id": "a", "text": "The session pauses until a user approves the command in the pull request.", "rationale": "Incorrect. The cloud agent runs non-interactively; nobody is there to answer an `ask`."}, {"id": "b", "text": "The command runs, and a warning is added to the session log.", "rationale": "Incorrect. The hook's decision is applied; the command doesn't run."}, {"id": "c", "text": "The command is denied, because `ask` is treated as `deny` when no user is available to answer.", "rationale": "Correct. In the cloud agent, `ask` is treated as `deny` because no user can answer."}, {"id": "d", "text": "The hook is ignored, because the cloud agent only loads hooks from the user's home directory.", "rationale": "Incorrect. The cloud agent loads hooks only from `.github/hooks/*.json` in the repository."}], "answer": ["c"], "explanation": "The cloud agent is non-interactive, so an `ask` decision is treated as `deny`. It loads hooks only from `.github/hooks/*.json` in the repository. Use `deny` with a reason that tells the agent to escalate.", "sources": ["https://docs.github.com/en/copilot/reference/hooks-reference"], "takeaway": "Cloud agent hooks: only `.github/hooks/*.json`, bash only, and `ask` means deny."}, {"id": "d6-right-size", "type": "single", "domain": "D6", "stem": "Every agent pull request requires two human approvals, including pull requests that only change files under `docs/`. Documentation updates now wait days. Code under `src/` handles payments.\n\nYou need to reduce delays without materially increasing risk.\n\nWhat should you do?", "options": [{"id": "a", "text": "Remove all required reviews and rely on CI.", "rationale": "Incorrect. Removing all reviews raises risk for the payments code under `src/`."}, {"id": "b", "text": "Add the documentation agent to the ruleset bypass list.", "rationale": "Incorrect. The bypass list lets an actor skip every rule. Never put agents on it."}, {"id": "c", "text": "Require one approval for changes limited to `docs/`, verified by a required check on the changed paths, and keep code owner review for `src/`.", "rationale": "Correct. Lower friction where risk is low, verified by an enforced path check, and keep strict review where risk is high."}, {"id": "d", "text": "Keep the current rules and add more reviewers to the rota.", "rationale": "Incorrect. It keeps an approval that adds delay without materially reducing risk."}], "answer": ["c"], "explanation": "The study guide asks you to classify actions by risk to right-size human intervention, and to minimise approvals that don't materially reduce risk. Option C lowers friction where the risk is low and keeps strict review where it is high, using an enforced path check. A and B remove controls; D keeps an approval that adds little.", "sources": ["https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/gh-600"], "takeaway": "Right-size human intervention by risk; remove approvals that don't reduce risk, keep them where mistakes are expensive."}, {"id": "case-fabrikam", "type": "case", "title": "Case study: Fabrikam deployments", "scenario": "**Overview.** Fabrikam builds an order platform in .NET and deploys it to Azure from GitHub Actions. Agents (GitHub Copilot cloud agent and a custom deployment-checker agent) open pull requests against the repository `fabrikam/platform`.\n\n**Current state.**\n- Deploys run from `.github/workflows/deploy.yml` on pushes to `main`.\n- The Azure service principal secret is stored as a repository Actions secret and used by every workflow.\n- CODEOWNERS contains only `* @fabrikam/developers`.\n\n**Requirements.**\n- No long-lived Azure credentials may be stored in GitHub.\n- Production deployments must be approved by the operations team.\n- An agent must not be able to weaken the deployment workflow without the platform team noticing.\n- Controls must not slow down ordinary code changes more than necessary.", "questions": [{"id": "q1", "type": "single", "domain": "D6", "stem": "How should Fabrikam authenticate the deploy job to Azure?", "options": [{"id": "a", "text": "Move the service principal secret to an organisation secret available to selected repositories.", "rationale": "Incorrect. It's still a long-lived credential stored in GitHub, and moving it to org level widens who can use it."}, {"id": "b", "text": "Use OpenID Connect with `id-token: write`, and an Azure federated credential bound to the `production` environment, which has the operations team as required reviewers.", "rationale": "Correct. OIDC issues short-lived tokens, so nothing long-lived is stored. A federated credential bound to the environment means Azure only trusts jobs that passed the operations team's approval."}, {"id": "c", "text": "Store the secret as an Agents secret so that only the agent can deploy.", "rationale": "Incorrect. Agents secrets are for the cloud agent's session. It doesn't remove the long-lived credential, and the agent shouldn't deploy."}, {"id": "d", "text": "Encrypt the secret and commit it to the repository.", "rationale": "Incorrect. Committing an encrypted secret still stores a long-lived credential, and the decryption key has to live somewhere."}], "answer": ["b"], "explanation": "OIDC issues short-lived tokens, so no long-lived credential is stored. Binding the federated credential to the environment means Azure only trusts jobs that ran through `production`, which requires the operations team's approval.", "takeaway": "No stored cloud credentials: OIDC + federated credential bound to an environment with required reviewers."}, {"id": "q2", "type": "single", "domain": "D1", "stem": "Which change addresses the requirement that agents must not weaken the deployment workflow unnoticed, while keeping ordinary code changes fast?", "options": [{"id": "a", "text": "Add `/.github/ @fabrikam/platform` after the `*` line in CODEOWNERS, and require review from code owners in the ruleset for `main`.", "rationale": "Correct. The last matching pattern wins, so the specific path goes after `*`, and CODEOWNERS only blocks merges when code owner review is required."}, {"id": "b", "text": "Add `/.github/ @fabrikam/platform` before the `*` line in CODEOWNERS.", "rationale": "Incorrect. Placed before `*`, the line is overridden by `*`, which matches everything and comes last."}, {"id": "c", "text": "Require two approvals for every pull request.", "rationale": "Incorrect. Two approvals on every PR slows ordinary changes, which the requirements say to avoid."}, {"id": "d", "text": "Tell agents in `copilot-instructions.md` not to edit files under `.github/`.", "rationale": "Incorrect. An instruction isn't enforced."}], "answer": ["a"], "explanation": "In CODEOWNERS the last matching pattern wins, so the specific path must come after `*`. CODEOWNERS only blocks merges when the ruleset requires code owner review. Placing it before `*` (B) is overridden by `*`. Two approvals for everything (C) slows ordinary changes. Instructions (D) aren't enforced.", "takeaway": "CODEOWNERS: wildcard first, specific paths after, and turn on code owner review in the ruleset."}], "sources": ["https://docs.github.com/en/actions/concepts/security/openid-connect", "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners"]}]}</script>
+<script>
+(() => {
+  "use strict";
+
+  // ---------- helpers ----------
+  const $ = (id) => document.getElementById(id);
+  function h(tag, attrs, ...kids) {
+    const n = document.createElement(tag);
+    if (attrs) for (const [k, v] of Object.entries(attrs)) {
+      if (v === undefined || v === null || v === false) continue;
+      if (k === "class") n.className = v;
+      else if (k === "text") n.textContent = v;
+      else if (k === "html") n.innerHTML = v;
+      else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+      else n.setAttribute(k, v === true ? "" : v);
+    }
+    for (const c of kids.flat()) if (c !== null && c !== undefined && c !== false) n.append(c.nodeType ? c : document.createTextNode(String(c)));
+    return n;
+  }
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  function inline(s) {
+    return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  }
+  function md(text) {
+    const blocks = String(text ?? "").trim().split(/\n\s*\n/);
+    return blocks.map((b) => {
+      const lines = b.split("\n");
+      if (lines.every((l) => /^\s*-\s+/.test(l))) return "<ul>" + lines.map((l) => "<li>" + inline(l.replace(/^\s*-\s+/, "")) + "</li>").join("") + "</ul>";
+      return "<p>" + lines.map(inline).join("<br>") + "</p>";
+    }).join("");
+  }
+  const prose = (text, cls) => h("div", { class: "prose" + (cls ? " " + cls : ""), html: md(text) });
+  function shuffle(a) { const r = a.slice(); for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; }
+  const letters = "ABCDEFGHIJ";
+  const fmtTime = (ms) => { const s = Math.max(0, Math.round(ms / 1000)); const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60; return (hh ? hh + ":" : "") + String(mm).padStart(hh ? 2 : 1, "0") + ":" + String(ss).padStart(2, "0"); };
+  const storeGet = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
+  const storeSet = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage unavailable */ } };
+  const SESSION_KEY = "gh600-exam-session-v1";
+  const CONFIG_KEY = "gh600-exam-config-v1";
+  const ATTEMPTS_KEY = "gh600-exam-attempts-v1";
+  const standalone = !(window.claude && window.claude.use);
+
+  // ---------- bank validation ----------
+  const TYPES = ["single", "multiple", "yesno", "order", "dropdown", "case"];
+  function validateQuestion(q, path, errs, inCase) {
+    if (!q || typeof q !== "object") { errs.push(path + ": not an object"); return; }
+    if (!q.id) errs.push(path + ": missing id");
+    if (!TYPES.includes(q.type)) { errs.push(path + ": unknown type \"" + q.type + "\""); return; }
+    if (inCase && (q.type === "case" || q.type === "yesno")) errs.push(path + ": a case study can't contain \"" + q.type + "\" questions");
+    if (q.type !== "case" && q.type !== "yesno" && !q.stem) errs.push(path + ": missing stem");
+    const optIds = (q.options || []).map((o) => o.id);
+    switch (q.type) {
+      case "single":
+      case "multiple":
+        if (!Array.isArray(q.options) || q.options.length < 2) errs.push(path + ": needs at least 2 options");
+        if (!Array.isArray(q.answer) || !q.answer.length) errs.push(path + ": answer must be a non-empty array of option ids");
+        else q.answer.forEach((a) => { if (!optIds.includes(a)) errs.push(path + ": answer \"" + a + "\" isn't an option id"); });
+        if (q.type === "single" && Array.isArray(q.answer) && q.answer.length !== 1) errs.push(path + ": single questions need exactly one answer");
+        if (q.type === "multiple" && q.select && Array.isArray(q.answer) && q.select !== q.answer.length) errs.push(path + ": select (" + q.select + ") differs from the number of answers (" + q.answer.length + ")");
+        break;
+      case "yesno":
+        if (!q.scenario) errs.push(path + ": missing scenario");
+        if (!Array.isArray(q.items) || !q.items.length) errs.push(path + ": needs items");
+        else q.items.forEach((it, i) => { if (!it.statement) errs.push(path + ".items[" + i + "]: missing statement"); if (!["yes", "no"].includes(it.answer)) errs.push(path + ".items[" + i + "]: answer must be \"yes\" or \"no\""); });
+        break;
+      case "order": {
+        const ids = (q.items || []).map((i) => i.id);
+        if (ids.length < 2) errs.push(path + ": needs at least 2 items");
+        if (!Array.isArray(q.answer) || q.answer.length !== ids.length || !q.answer.every((a) => ids.includes(a))) errs.push(path + ": answer must list every item id once, in the correct order");
+        break;
+      }
+      case "dropdown": {
+        if (!q.template) errs.push(path + ": missing template");
+        const keys = [...String(q.template || "").matchAll(/\[\[(\w+)\]\]/g)].map((m) => m[1]);
+        if (!keys.length) errs.push(path + ": template has no [[blank]] markers");
+        keys.forEach((k) => { const b = (q.blanks || {})[k]; if (!b) errs.push(path + ": blank \"" + k + "\" isn't defined in blanks"); else if (!Array.isArray(b.options) || !b.options.includes(b.answer)) errs.push(path + ": blank \"" + k + "\" answer must be one of its options"); });
+        break;
+      }
+      case "case":
+        if (!q.scenario) errs.push(path + ": missing scenario");
+        if (!Array.isArray(q.questions) || !q.questions.length) errs.push(path + ": needs questions");
+        else q.questions.forEach((s, i) => validateQuestion(s, path + ".questions[" + i + "]", errs, true));
+        break;
+    }
+  }
+  function validateBank(b) {
+    const errs = [];
+    if (!b || typeof b !== "object") return ["The file isn't a JSON object."];
+    if (!Array.isArray(b.questions) || !b.questions.length) errs.push("questions must be a non-empty array");
+    const seen = new Set();
+    (b.questions || []).forEach((q, i) => { validateQuestion(q, "questions[" + i + "] (" + (q && q.id) + ")", errs, false); if (q && q.id) { if (seen.has(q.id)) errs.push("duplicate id \"" + q.id + "\""); seen.add(q.id); } });
+    return errs;
+  }
+  const domainOf = (q) => q.type === "case" ? (q.domain || (q.questions[0] && q.questions[0].domain) || "—") : (q.domain || "—");
+  function unitCount(q) { return q.type === "yesno" ? q.items.length : q.type === "case" ? q.questions.length : 1; }
+
+  // ---------- state ----------
+  let bank = null, bankSource = "", bankErrors = [], catalog = [];
+  let session = null;   // {cfg, units, answers, flags, locked, revealed, idx, startedAt, endsAt, finished, results}
+  let view = "start";   // start | question | review | results
+  let timerHandle = null, db = null, dl = null, attempts = [], dbState = "pending";
+  const defaultCfg = () => ({ mode: "exam", count: 0, domains: [], minutes: 0, shuffleQ: true, shuffleOpts: true });
+  let cfg = Object.assign(defaultCfg(), storeGet(CONFIG_KEY) || {});
+
+  function setBank(b, source) {
+    const errs = validateBank(b);
+    bankErrors = errs;
+    if (errs.length) return false;
+    bank = b; bankSource = source;
+    const domains = Object.keys(bank.domains || {}).length ? Object.keys(bank.domains) : [...new Set(bank.questions.map(domainOf))];
+    if (!cfg.domains.length || !cfg.domains.some((d) => domains.includes(d))) cfg.domains = domains.slice();
+    cfg.count = bank.questions.length;
+    cfg.minutes = bank.durationMinutes || Math.max(10, Math.round(totalUnits(bank.questions) * 2));
+    return true;
+  }
+  const totalUnits = (qs) => qs.reduce((s, q) => s + unitCount(q), 0);
+  const domainName = (d) => (bank && bank.domains && bank.domains[d]) || d;
+
+  // ---------- build an exam ----------
+  function buildUnits(questions, c) {
+    let qs = questions.filter((q) => c.domains.includes(domainOf(q)) || (q.type === "case" && q.questions.some((s) => c.domains.includes(s.domain))));
+    if (c.shuffleQ) qs = shuffle(qs);
+    if (c.count && c.count < qs.length) qs = qs.slice(0, c.count);
+    const units = [];
+    const optOrder = (q) => (q.options ? (c.shuffleOpts ? shuffle(q.options.map((o) => o.id)) : q.options.map((o) => o.id)) : null);
+    for (const q of qs) {
+      if (q.type === "yesno") {
+        q.items.forEach((it, i) => units.push({ key: q.id + "/" + it.id, kind: "yesno", qid: q.id, q, item: it, domain: q.domain, section: { type: "yesno", id: q.id, n: i + 1, of: q.items.length } }));
+      } else if (q.type === "case") {
+        q.questions.forEach((s, i) => units.push({ key: q.id + "/" + s.id, kind: s.type, qid: q.id, q: s, parent: q, domain: s.domain || q.domain, optOrder: optOrder(s), orderInit: s.type === "order" ? shuffle(s.items.map((x) => x.id)) : null, section: { type: "case", id: q.id, title: q.title, scenario: q.scenario, n: i + 1, of: q.questions.length } }));
+      } else {
+        units.push({ key: q.id, kind: q.type, qid: q.id, q, domain: q.domain, optOrder: optOrder(q), orderInit: q.type === "order" ? shuffle(q.items.map((x) => x.id)) : null, section: null });
+      }
+    }
+    return units;
+  }
+  function startExam(c, onlyIds) {
+    const qs = onlyIds ? bank.questions.filter((q) => onlyIds.includes(q.id)) : bank.questions;
+    const units = buildUnits(qs, onlyIds ? Object.assign({}, c, { count: 0, domains: Object.keys(bank.domains || {}).length ? Object.keys(bank.domains) : [...new Set(bank.questions.map(domainOf))] }) : c);
+    if (!units.length) { renderStart("No questions match those settings. Select at least one domain."); return; }
+    const now = Date.now();
+    session = { bankTitle: bank.title || "Question bank", bank, cfg: Object.assign({}, c), units: units.map(stripUnit), answers: {}, flags: {}, locked: {}, revealed: {}, first: {}, idx: 0, startedAt: now, endsAt: c.mode === "exam" && c.minutes ? now + c.minutes * 60000 : null, finished: false };
+    hydrateUnits();
+    persist();
+    view = "question";
+    startTimer();
+    render();
+  }
+  // units hold references to question objects; we persist only keys and rebuild references from the bank.
+  function stripUnit(u) { return { key: u.key, kind: u.kind, qid: u.qid, sub: u.parent ? u.q.id : null, item: u.item ? u.item.id : null, domain: u.domain, optOrder: u.optOrder || null, orderInit: u.orderInit || null, section: u.section ? { type: u.section.type, id: u.section.id, n: u.section.n, of: u.section.of } : null }; }
+  function hydrateUnits() {
+    const byId = Object.fromEntries(session.bank.questions.map((q) => [q.id, q]));
+    session.live = session.units.map((u) => {
+      const top = byId[u.qid];
+      const q = u.sub ? top.questions.find((s) => s.id === u.sub) : top;
+      const item = u.item ? top.items.find((i) => i.id === u.item) : null;
+      const section = u.section ? Object.assign({}, u.section, u.section.type === "case" ? { title: top.title, scenario: top.scenario } : { scenario: top.scenario }) : null;
+      return Object.assign({}, u, { q, top, itemObj: item, section });
+    });
+  }
+  function persist() { if (session && !session.finished) storeSet(SESSION_KEY, Object.assign({}, session, { live: undefined })); }
+
+  // ---------- answers & scoring ----------
+  function isAnswered(u) {
+    const a = session.answers[u.key];
+    switch (u.kind) {
+      case "single": case "yesno": return !!a;
+      case "multiple": return Array.isArray(a) && a.length > 0;
+      case "order": return Array.isArray(a);
+      case "dropdown": return !!a && Object.keys(u.q.blanks).every((k) => a[k]);
+    }
+    return false;
+  }
+  function scoreUnit(u) {
+    const a = session.answers[u.key];
+    switch (u.kind) {
+      case "single": return a === u.q.answer[0] ? 1 : 0;
+      case "yesno": return a === u.itemObj.answer ? 1 : 0;
+      case "multiple": {
+        const sel = Array.isArray(a) ? a : [];
+        const right = new Set(u.q.answer);
+        const hits = sel.filter((x) => right.has(x)).length, miss = sel.filter((x) => !right.has(x)).length;
+        return Math.max(0, hits - miss) / right.size;
+      }
+      case "order": {
+        if (!Array.isArray(a)) return 0;
+        return u.q.answer.filter((id, i) => a[i] === id).length / u.q.answer.length;
+      }
+      case "dropdown": {
+        const keys = Object.keys(u.q.blanks);
+        return keys.filter((k) => a && a[k] === u.q.blanks[k].answer).length / keys.length;
+      }
+    }
+    return 0;
+  }
+  function computeResults() {
+    const first = session.first || {};
+    const per = session.live.map((u) => ({ u, pts: u.key in first ? first[u.key] : scoreUnit(u), answered: isAnswered(u) || u.key in first }));
+    const total = per.length, pts = per.reduce((s, r) => s + r.pts, 0);
+    const byDomain = {};
+    for (const r of per) { const d = r.u.domain || "—"; byDomain[d] = byDomain[d] || { pts: 0, n: 0 }; byDomain[d].pts += r.pts; byDomain[d].n += 1; }
+    const pct = total ? pts / total : 0;
+    return { per, total, pts, pct, score: Math.round(pct * 1000), byDomain, passing: session.bank.passingScore || 700 };
+  }
+
+  // ---------- navigation & locking ----------
+  const cur = () => session.live[session.idx];
+  function leaveUnit(fromIdx, toIdx) {
+    if (session.cfg.mode !== "exam") return;
+    const u = session.live[fromIdx];
+    if (!u || !u.section) return;
+    if (u.section.type === "yesno") session.locked[u.key] = true;
+    if (u.section.type === "case") {
+      const to = toIdx === null ? null : session.live[toIdx];
+      if (!to || !to.section || to.section.id !== u.section.id) session.live.forEach((x) => { if (x.section && x.section.id === u.section.id) session.locked[x.key] = true; });
+    }
+  }
+  function go(toIdx) {
+    if (toIdx < 0 || toIdx >= session.live.length) return;
+    if (session.locked[session.live[toIdx].key]) return;
+    leaveUnit(session.idx, toIdx);
+    session.idx = toIdx; view = "question"; persist(); render(); window.scrollTo(0, 0);
+  }
+  function openReview() { leaveUnit(session.idx, null); view = "review"; persist(); render(); window.scrollTo(0, 0); }
+
+  function startTimer() {
+    clearInterval(timerHandle);
+    const tick = () => {
+      const t = $("sbTimer");
+      if (!session || session.finished || view === "start" || view === "results") { t.hidden = true; return; }
+      t.hidden = false;
+      if (session.endsAt) {
+        const left = session.endsAt - Date.now();
+        t.textContent = "Time remaining " + fmtTime(left);
+        t.classList.toggle("low", left < 5 * 60000);
+        if (left <= 0) { finishExam(true); }
+      } else {
+        t.textContent = "Elapsed " + fmtTime(Date.now() - session.startedAt);
+        t.classList.remove("low");
+      }
+    };
+    tick();
+    timerHandle = setInterval(tick, 1000);
+  }
+
+  async function finishExam(timeUp) {
+    if (!session || session.finished) return;
+    session.finished = true; session.finishedAt = Date.now(); session.timeUp = !!timeUp;
+    session.results = computeResults();
+    storeSet(SESSION_KEY, null);
+    view = "results"; render(); window.scrollTo(0, 0);
+    await saveAttempt();
+  }
+
+  // ---------- rendering: start ----------
+  function render() {
+    const main = $("main");
+    main.replaceChildren();
+    $("actionbar").hidden = view !== "question";
+    $("sbTitle").textContent = session && view !== "start" ? session.bankTitle : "GH-600 · Developing in Agentic AI Systems";
+    $("sbCount").textContent = session && view === "question" ? "Question " + (session.idx + 1) + " of " + session.live.length : session && view === "review" ? "Review" : "";
+    if (view === "start") return renderStart();
+    if (view === "question") return renderQuestion();
+    if (view === "review") return renderReview();
+    if (view === "results") return renderResults();
+  }
+
+  function renderStart(message) {
+    const main = $("main");
+    main.replaceChildren();
+    $("actionbar").hidden = true;
+    $("sbTimer").hidden = true;
+    $("sbCount").textContent = "";
+    $("sbTitle").textContent = "GH-600 · Developing in Agentic AI Systems";
+
+    const saved = storeGet(SESSION_KEY);
+    if (saved && !saved.finished && saved.units && saved.bank) {
+      const left = saved.endsAt ? saved.endsAt - Date.now() : null;
+      main.append(h("div", { class: "notice info" },
+        h("div", { class: "row" },
+          h("span", { text: "You have an unfinished attempt: " + (saved.bankTitle || "exam") + ", " + Object.keys(saved.answers || {}).length + " of " + saved.units.length + " answered" + (left !== null ? (left > 0 ? ", " + fmtTime(left) + " left." : ", time is up.") : ".") }),
+          h("button", { type: "button", onclick: () => { session = saved; session.first = session.first || {}; hydrateUnits(); view = "question"; startTimer(); render(); } }, "Resume"),
+          h("button", { type: "button", class: "quiet", onclick: () => { storeSet(SESSION_KEY, null); renderStart(); } }, "Discard")
+        )));
+    }
+
+    // Intro
+    main.append(h("section", { class: "panel" },
+      h("h1", { style: "font-size:1.6rem" }, "Exam room"),
+      h("p", { class: "muted", style: "max-width:70ch" }, "Practise under exam conditions: one question per screen, a countdown, Mark for review, a review screen, and Yes/No and case-study sections you can't return to once you leave them. Questions come from a JSON file, so you can swap in any bank that follows the format at the bottom of this page.")
+    ));
+
+    // Bank
+    const bankPanel = h("section", { class: "panel", "aria-labelledby": "bankH" }, h("h2", { id: "bankH" }, "Question bank"));
+    if (bank) {
+      const byDom = {};
+      bank.questions.forEach((q) => { const d = domainOf(q); byDom[d] = (byDom[d] || 0) + unitCount(q); });
+      const byType = {};
+      bank.questions.forEach((q) => { byType[q.type] = (byType[q.type] || 0) + 1; });
+      const domKeys = Object.keys(bank.domains || byDom);
+      bankPanel.append(
+        h("div", { class: "row" }, h("strong", { text: bank.title || "Untitled bank" }), h("span", { class: "pill idle", text: bankSource })),
+        bank.author ? h("p", { class: "muted small", text: bank.author }) : null,
+        h("div", { class: "grid2" },
+          h("div", { class: "table-wrap" }, h("table", { class: "domain-table" }, h("tbody", null,
+            domKeys.map((d) => h("tr", null, h("td", { class: "mono", text: d }), h("td", { text: domainName(d) }), h("td", { class: "num", text: String(byDom[d] || 0) })))))),
+          h("div", { class: "small muted" },
+            h("p", null, totalUnits(bank.questions) + " scored items from " + bank.questions.length + " questions."),
+            h("p", null, Object.entries(byType).map(([t, n]) => n + " " + t).join(" · ")),
+            h("p", null, "Pass mark " + (bank.passingScore || 700) + " / 1000.")
+          )
+        )
+      );
+    } else {
+      bankPanel.append(h("p", { class: "muted" }, "No question bank is loaded yet. Load a JSON file or paste one below."));
+    }
+    if (bankErrors.length) bankPanel.append(h("div", { class: "notice error" }, h("strong", null, "That file can't be used yet. Fix these problems and load it again:"), h("ul", null, bankErrors.slice(0, 12).map((e) => h("li", { text: e }))), bankErrors.length > 12 ? h("p", { text: "…and " + (bankErrors.length - 12) + " more." }) : null));
+
+    const fileInput = h("input", { type: "file", id: "bankFile", accept: ".json,application/json", hidden: true, onchange: async (e) => {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      try { const b = JSON.parse(await f.text()); if (setBank(b, f.name)) { session = null; } } catch (err) { bankErrors = ["The file isn't valid JSON: " + err.message]; }
+      renderStart();
+    } });
+    const paste = h("textarea", { id: "bankPaste", placeholder: "{ \"title\": \"My bank\", \"questions\": [ … ] }", hidden: true, "aria-label": "Paste question bank JSON" });
+    const pasteBtn = h("button", { type: "button", class: "secondary", hidden: true, onclick: () => {
+      try { const b = JSON.parse(paste.value); if (setBank(b, "pasted JSON")) session = null; } catch (err) { bankErrors = ["That text isn't valid JSON: " + err.message]; }
+      renderStart();
+    } }, "Load pasted JSON");
+    if (catalog.length) bankPanel.append(h("div", { class: "field" }, h("span", null, "Available banks"), h("div", { class: "row" },
+      catalog.map((c) => h("button", { type: "button", class: bank && bankSource === c.file ? "" : "quiet", onclick: async () => {
+        try { const r = await fetch(c.file, { cache: "no-store" }); const b = await r.json(); if (setBank(b, c.file)) session = null; } catch (err) { bankErrors = ["Couldn't load " + c.file + ": " + err.message]; }
+        renderStart();
+      } }, c.title)))));
+    bankPanel.append(h("div", { class: "row" },
+      h("button", { type: "button", class: "secondary", onclick: () => fileInput.click() }, "Load a .json file"),
+      h("button", { type: "button", class: "quiet", onclick: () => { paste.hidden = !paste.hidden; pasteBtn.hidden = paste.hidden; if (!paste.hidden) paste.focus(); } }, "Paste JSON"),
+      bank && canSave() ? h("button", { type: "button", class: "quiet", onclick: () => saveFile((bank.title || "question-bank").toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".json", JSON.stringify(bank, null, 2)) }, "Save this bank as .json") : null,
+      fileInput), paste, pasteBtn);
+    main.append(bankPanel);
+
+    // Settings
+    if (bank) {
+      const domKeys = Object.keys(bank.domains || {}).length ? Object.keys(bank.domains) : [...new Set(bank.questions.map(domainOf))];
+      const form = h("form", { class: "panel", id: "cfgForm", "aria-labelledby": "cfgH", onsubmit: (e) => { e.preventDefault(); readCfg(); storeSet(CONFIG_KEY, cfg); startExam(cfg); } });
+      const modeSeg = h("div", { class: "segmented", role: "radiogroup", "aria-label": "Mode" },
+        ["exam", "practice", "learn"].map((m) => h("label", null, h("input", { type: "radio", name: "mode", id: "mode-" + m, value: m, checked: cfg.mode === m }), { exam: "Exam", practice: "Practice", learn: "Learn" }[m])));
+      form.append(
+        h("h2", { id: "cfgH" }, "Settings"),
+        h("div", { class: "grid2" },
+          h("div", { class: "field" }, h("span", null, "Mode"), modeSeg, h("p", { class: "small muted" }, "Exam: timed, locked sections, answers at the end. Practice: your answer is checked when you press Next, so you can change your mind until then. Learn: the same, plus why each option is right or wrong and Try again.")),
+          h("div", { class: "field" }, h("span", null, "Number of questions"), h("input", { type: "number", id: "cfgCount", min: "1", max: String(bank.questions.length), value: String(Math.min(cfg.count || bank.questions.length, bank.questions.length)) }), h("p", { class: "small muted" }, "Out of " + bank.questions.length + ". A Yes/No series or case study counts as one question but holds several scored items.")),
+          h("div", { class: "field" }, h("span", null, "Time limit (minutes, exam mode)"), h("input", { type: "number", id: "cfgMinutes", min: "1", max: "300", value: String(cfg.minutes || 45) }), h("p", { class: "small muted" }, "The real GH-600 allows 120 minutes for about 40–60 questions."))
+        ),
+        h("div", { class: "field" }, h("span", null, "Domains"), h("div", { class: "checks" },
+          domKeys.map((d) => h("label", { class: "check-inline" }, h("input", { type: "checkbox", name: "dom", value: d, id: "dom-" + d, checked: cfg.domains.includes(d) }), h("span", { class: "mono", text: d }), h("span", { class: "muted", text: domainName(d) }))))),
+        h("div", { class: "checks" },
+          h("label", { class: "check-inline" }, h("input", { type: "checkbox", id: "cfgShuffleQ", checked: cfg.shuffleQ }), "Shuffle question order"),
+          h("label", { class: "check-inline" }, h("input", { type: "checkbox", id: "cfgShuffleO", checked: cfg.shuffleOpts }), "Shuffle answer options")),
+        message ? h("div", { class: "notice error", text: message }) : null,
+        h("div", { class: "row" }, h("button", { type: "submit" }, "Start"))
+      );
+      main.append(form);
+    }
+
+    // History
+    const hist = h("section", { class: "panel", "aria-labelledby": "histH" }, h("h2", { id: "histH" }, "Past attempts"));
+    if (dbState === "local") hist.append(h("p", { class: "muted small" }, "Saved in this browser only."));
+    if (dbState === "none") hist.append(h("p", { class: "muted small" }, "Attempts aren't saved in this view. Open the page on claude.ai while signed in to keep your history across devices."));
+    if (dbState === "pending") hist.append(h("p", { class: "muted small" }, "Loading your saved attempts…"));
+    if (dbState === "none" || dbState === "pending") { /* message above */ }
+    else if (!attempts.length) hist.append(h("p", { class: "muted small" }, "Your finished attempts will appear here, with score and weakest domain."));
+    else {
+      const rows = attempts.slice().sort((a, b) => (b.finishedAt || 0) - (a.finishedAt || 0)).slice(0, 15);
+      hist.append(h("div", { class: "table-wrap" }, h("table", { class: "history" },
+        h("thead", null, h("tr", null, ["Date", "Bank", "Mode", "Items", "Score", "Result", "Weakest"].map((t) => h("th", { text: t })))),
+        h("tbody", null, rows.map((a) => h("tr", null,
+          h("td", { class: "mono", text: new Date(a.finishedAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }),
+          h("td", { text: a.bankTitle }),
+          h("td", { text: a.mode }),
+          h("td", { class: "mono", text: String(a.total) }),
+          h("td", { class: "mono", text: String(a.score) }),
+          h("td", null, h("span", { class: "pill " + (a.score >= a.passing ? "ok" : "bad"), text: a.score >= a.passing ? "Pass" : "Fail" })),
+          h("td", { class: "mono", text: a.weakest || "—" })))))));
+    }
+    main.append(hist);
+
+    // Format help
+    main.append(h("section", { class: "panel" },
+      h("details", { class: "help" },
+        h("summary", null, "Question file format"),
+        h("div", { class: "prose", style: "margin-top:10px", html: md("A bank is one JSON object with `title`, optional `passingScore` (default 700), `durationMinutes`, `domains` (code → name) and a `questions` array. Every question has a unique `id`, a `type` and a `domain`. Text fields accept a little Markdown: `**bold**`, `` `code` ``, blank lines for paragraphs, and lines starting with `- ` for lists. Each question can carry an `explanation` and a `sources` array of URLs.\n\n- `single`: `stem`, `options` [{id, text}], `answer` [one id]\n- `multiple`: as single, plus `select` (how many to choose); `answer` lists every correct id. Scored with partial credit.\n- `yesno`: a shared `scenario` and `items` [{id, statement, answer: \"yes\"|\"no\", explanation}]. Each item is scored and locks once you leave it.\n- `order`: `stem`, `items` [{id, text}], `answer` [ids in the right order]. Shown shuffled.\n- `dropdown`: `stem`, a `template` with `[[name]]` markers, and `blanks` {name: {options, answer}}.\n- `case`: `title`, a long `scenario`, and `questions` (single, multiple, order or dropdown). The whole case locks once you leave it.") }),
+        h("pre", { class: "example", text: JSON.stringify({ title: "My bank", passingScore: 700, durationMinutes: 30, domains: { D2: "Tool use and environment interaction" }, questions: [{ id: "q1", type: "single", domain: "D2", stem: "Which job name does Copilot run before the cloud agent starts?", options: [{ id: "a", text: "`setup`" }, { id: "b", text: "`copilot-setup-steps`" }], answer: ["b"], explanation: "The job must be named copilot-setup-steps.", sources: ["https://docs.github.com/…"] }] }, null, 2) })
+      )
+    ));
+  }
+  function readCfg() {
+    const mode = document.querySelector('input[name="mode"]:checked');
+    cfg.mode = mode ? mode.value : "exam";
+    cfg.count = Math.max(1, parseInt($("cfgCount").value, 10) || bank.questions.length);
+    cfg.minutes = Math.max(1, parseInt($("cfgMinutes").value, 10) || 45);
+    cfg.domains = [...document.querySelectorAll('input[name="dom"]:checked')].map((x) => x.value);
+    cfg.shuffleQ = $("cfgShuffleQ").checked;
+    cfg.shuffleOpts = $("cfgShuffleO").checked;
+  }
+
+  // ---------- rendering: question ----------
+  function renderQuestion() {
+    const main = $("main");
+    const u = cur();
+    const mode = session.cfg.mode;
+    const checking = mode !== "exam";
+    const revealed = checking && session.revealed[u.key];
+    const disabled = !!revealed;
+
+    const panel = h("section", { class: "panel", "aria-live": "polite" });
+    const qhead = h("div", { class: "qhead" },
+      h("span", { class: "qnum", text: "Question " + (session.idx + 1) }),
+      h("span", { class: "muted small mono", text: (u.domain || "") + (u.domain ? " · " + domainName(u.domain) : "") }));
+    panel.append(qhead);
+
+    if (u.section && session.cfg.mode === "exam") {
+      panel.append(h("div", { class: "notice", text: u.section.type === "yesno"
+        ? "This question is part of a series that presents the same scenario. After you answer a question in this section and leave it, you will NOT be able to return to it. (" + u.section.n + " of " + u.section.of + ")"
+        : "Case study (" + u.section.n + " of " + u.section.of + "). You can move between the questions in this case study, but once you leave it you will NOT be able to return." }));
+    }
+    if (u.section && u.section.type === "case") {
+      panel.append(h("div", { class: "scenario" }, h("h3", { text: u.section.title || "Case study" }), prose(u.section.scenario)));
+    }
+    if (u.section && u.section.type === "yesno") {
+      panel.append(prose(u.section.scenario));
+    }
+
+    const body = h("div", { class: "options" });
+    const answers = session.answers;
+    const setAns = (v) => { answers[u.key] = v; persist(); updateBar(); };
+
+    if (u.kind === "single" || u.kind === "multiple") {
+      panel.append(prose(u.q.stem));
+      const multi = u.kind === "multiple";
+      const max = multi ? (u.q.select || u.q.answer.length) : 1;
+      if (multi) panel.append(h("p", { class: "instruction", text: "Select " + max + " answers." }));
+      const opts = (u.optOrder || u.q.options.map((o) => o.id)).map((id) => u.q.options.find((o) => o.id === id));
+      opts.forEach((o, i) => {
+        const id = "opt-" + u.key.replace(/[^\w-]/g, "_") + "-" + o.id;
+        const checked = multi ? (answers[u.key] || []).includes(o.id) : answers[u.key] === o.id;
+        const input = h("input", { type: multi ? "checkbox" : "radio", name: "q-" + u.key, id, value: o.id, checked, disabled });
+        input.addEventListener("change", () => {
+          if (multi) {
+            let sel = [...body.querySelectorAll("input:checked")].map((x) => x.value);
+            if (sel.length > max) { input.checked = false; sel = sel.filter((x) => x !== o.id); }
+            setAns(sel.length ? sel : undefined);
+          } else setAns(o.id);
+        });
+        const isRight = u.q.answer.includes(o.id);
+        const cls = revealed ? (isRight ? " correct" : (checked ? " wrong" : " missed")) : "";
+        body.append(h("label", { class: "opt" + cls, for: id }, input, h("span", null, h("span", { class: "letter", text: letters[i] + "." }), h("span", { html: inline(o.text) })),
+          revealed && o.rationale ? h("span", { class: "why" }, h("strong", { text: isRight ? "Correct." : "Incorrect." }), h("span", { html: inline(String(o.rationale).replace(/^(Correct|Incorrect)\.\s*/, "")) })) : null));
+      });
+      panel.append(body);
+    }
+
+    if (u.kind === "yesno") {
+      panel.append(h("p", { class: "instruction" }, h("span", { html: inline(u.itemObj.statement) })));
+      const wrap = h("div", { class: "yn", role: "radiogroup", "aria-label": "Yes or No" });
+      ["yes", "no"].forEach((v) => {
+        const id = "yn-" + u.key.replace(/[^\w-]/g, "_") + "-" + v;
+        const checked = answers[u.key] === v;
+        const input = h("input", { type: "radio", name: "yn-" + u.key, id, value: v, checked, disabled, onchange: () => setAns(v) });
+        const cls = revealed ? (u.itemObj.answer === v ? " correct" : (checked ? " wrong" : "")) : "";
+        wrap.append(h("label", { class: "opt" + cls, for: id }, input, h("span", { text: v === "yes" ? "Yes" : "No" })));
+      });
+      panel.append(wrap);
+    }
+
+    if (u.kind === "order") {
+      panel.append(prose(u.q.stem));
+      panel.append(h("p", { class: "instruction", text: "Arrange the items in the correct order. Use the arrows to move an item." }));
+      const arr = Array.isArray(answers[u.key]) ? answers[u.key].slice() : u.orderInit.slice();
+      const list = h("ol", { class: "order-list" });
+      const draw = () => {
+        list.replaceChildren();
+        arr.forEach((id, i) => {
+          const it = u.q.items.find((x) => x.id === id);
+          const correct = revealed ? (u.q.answer[i] === id) : null;
+          list.append(h("li", { class: "order-item" + (correct === true ? " opt correct" : correct === false ? " opt wrong" : "") },
+            h("span", { class: "pos", text: String(i + 1) }),
+            h("span", { html: inline(it.text) }),
+            h("span", { class: "moves" },
+              h("button", { type: "button", class: "quiet", "aria-label": "Move up", disabled: disabled || i === 0, onclick: () => { [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]]; setAns(arr.slice()); draw(); } }, "↑"),
+              h("button", { type: "button", class: "quiet", "aria-label": "Move down", disabled: disabled || i === arr.length - 1, onclick: () => { [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]]; setAns(arr.slice()); draw(); } }, "↓"))));
+        });
+      };
+      draw();
+      panel.append(list);
+      if (!Array.isArray(answers[u.key]) && !disabled) panel.append(h("div", null, h("button", { type: "button", class: "quiet", onclick: (e) => { setAns(arr.slice()); e.target.replaceWith(h("span", { class: "small muted", text: "Order saved." })); } }, "Keep this order")));
+      if (revealed) panel.append(h("p", { class: "small" }, "Correct order: " + u.q.answer.map((id, i) => (i + 1) + ". " + u.q.items.find((x) => x.id === id).text).join("  ")));
+    }
+
+    if (u.kind === "dropdown") {
+      panel.append(prose(u.q.stem));
+      panel.append(h("p", { class: "instruction", text: "Select the correct option in each box." }));
+      const a = Object.assign({}, answers[u.key] || {});
+      const pre = h("pre", { class: "hot" });
+      const parts = String(u.q.template).split(/\[\[(\w+)\]\]/);
+      parts.forEach((p, i) => {
+        if (i % 2 === 0) { pre.append(document.createTextNode(p)); return; }
+        const b = u.q.blanks[p];
+        const cls = revealed ? (a[p] === b.answer ? "correct" : "wrong") : "";
+        const sel = h("select", { "aria-label": "Box " + p, id: "dd-" + u.key.replace(/[^\w-]/g, "_") + "-" + p, class: cls, disabled },
+          h("option", { value: "", text: "— select —" }),
+          b.options.map((o) => h("option", { value: o, text: o, selected: a[p] === o })));
+        sel.addEventListener("change", () => { if (sel.value) a[p] = sel.value; else delete a[p]; setAns(Object.keys(a).length ? Object.assign({}, a) : undefined); });
+        pre.append(sel);
+      });
+      panel.append(pre);
+      if (revealed) panel.append(h("ul", { class: "why-list" }, Object.entries(u.q.blanks).map(([k, b]) => h("li", null, h("strong", { text: k + " = " + b.answer + ". " }), b.rationale ? h("span", { html: inline(b.rationale) }) : null))));
+    }
+
+    if (mode === "learn") {
+      const bar = h("div", { class: "learnbar" });
+      if (!revealed) {
+        bar.append(h("span", { class: "small muted", text: "Press Next to check your answer." }),
+          h("button", { type: "button", class: "quiet", onclick: () => reveal(u) }, "Show answer"));
+      } else {
+        bar.append(h("button", { type: "button", class: "secondary", onclick: () => { delete session.answers[u.key]; delete session.revealed[u.key]; persist(); render(); } }, "Try again"));
+      }
+      panel.append(bar);
+    }
+    if (revealed) panel.append(feedbackBox(u, false));
+    main.append(panel);
+    updateBar();
+  }
+
+  function reveal(u) {
+    if (!(u.key in session.first)) session.first[u.key] = scoreUnit(u);
+    session.revealed[u.key] = true; persist(); render();
+  }
+  function feedbackBox(u, withOptions) {
+    const pts = scoreUnit(u);
+    const expl = u.kind === "yesno" ? (u.itemObj.explanation || u.top.explanation) : (u.q.explanation || (u.parent ? u.parent.explanation : null));
+    const sources = (u.q.sources || (u.top && u.top.sources) || []);
+    const take = u.q.takeaway || (u.top && u.top.takeaway) || (u.parent && u.parent.takeaway);
+    const optWhy = withOptions && (u.kind === "single" || u.kind === "multiple") && u.q.options.some((o) => o.rationale)
+      ? h("div", null, h("div", { class: "label" }, "Why each option"), h("ul", { class: "why-list" }, (u.optOrder || u.q.options.map((o) => o.id)).map((id, i) => { const o = u.q.options.find((x) => x.id === id); return h("li", null, h("strong", { text: letters[i] + ". " }), h("span", { html: inline(o.rationale || (u.q.answer.includes(o.id) ? "Correct." : "Incorrect.")) })); })))
+      : null;
+    const blankWhy = withOptions && u.kind === "dropdown" ? h("ul", { class: "why-list" }, Object.entries(u.q.blanks).map(([k, b]) => h("li", null, h("strong", { text: k + " = " + b.answer + ". " }), b.rationale ? h("span", { html: inline(b.rationale) }) : null))) : null;
+    return h("div", { class: "feedback " + (pts === 1 ? "ok" : "bad") },
+      h("strong", { text: !isAnswered(u) ? "Answer shown." : pts === 1 ? "Correct." : pts > 0 ? "Partly correct (" + Math.round(pts * 100) + " %)." : "Not correct." }),
+      expl ? prose(expl) : null,
+      optWhy, blankWhy,
+      take ? h("div", { class: "takeaway" }, h("div", { class: "label" }, "Remember"), h("span", { html: inline(take) })) : null,
+      sources.length ? h("div", { class: "sources" }, h("span", { class: "label" }, "Sources"), sources.map((s) => h("a", { href: s, target: "_blank", rel: "noopener", text: s }))) : null);
+  }
+
+  function updateBar() {
+    if (!session || view !== "question") return;
+    const u = cur();
+    const practice = session.cfg.mode === "practice";
+    const exam = session.cfg.mode === "exam";
+    const prev = session.live[session.idx - 1];
+    $("btnPrev").disabled = session.idx === 0 || (prev && session.locked[prev.key]) || (u.section && u.section.type === "yesno" && exam);
+    $("btnFlag").setAttribute("aria-pressed", session.flags[u.key] ? "true" : "false");
+    $("btnFlag").textContent = session.flags[u.key] ? "Marked for review" : "Mark for review";
+    const pendingCheck = !exam && isAnswered(u) && !session.revealed[u.key];
+    $("btnNext").textContent = pendingCheck ? "Next: check answer ›" : (session.idx === session.live.length - 1 ? "Review ›" : "Next ›");
+    $("btnCheck").hidden = true;
+    $("sbCount").textContent = "Question " + (session.idx + 1) + " of " + session.live.length;
+  }
+
+  // ---------- rendering: review ----------
+  function renderReview() {
+    const main = $("main");
+    const answered = session.live.filter(isAnswered).length;
+    const flagged = session.live.filter((u) => session.flags[u.key]).length;
+    const panel = h("section", { class: "panel", "aria-labelledby": "revH" },
+      h("h2", { id: "revH" }, "Review your answers"),
+      h("p", { class: "muted" }, answered + " of " + session.live.length + " answered · " + flagged + " marked for review · " + (session.live.length - answered) + " unanswered. Select a number to go back to it. Locked questions belong to sections you've already left."),
+      h("div", { class: "legend" },
+        h("span", null, h("span", { class: "swatch", style: "background:var(--accent-soft);border-color:var(--accent)" }), "Answered"),
+        h("span", null, h("span", { class: "swatch", style: "border-style:dashed" }), "Unanswered"),
+        h("span", null, h("span", { class: "swatch", style: "background:var(--flag);border-color:var(--flag)" }), "Marked for review"),
+        h("span", null, h("span", { class: "swatch", style: "opacity:.55" }), "Locked")),
+      h("div", { class: "tile-grid" }, session.live.map((u, i) => {
+        const locked = !!session.locked[u.key];
+        const cls = ["tile", isAnswered(u) ? "answered" : "unanswered", session.flags[u.key] ? "flagged" : "", locked ? "locked" : ""].join(" ");
+        return h("button", { type: "button", class: cls, disabled: locked, "aria-label": "Question " + (i + 1) + (isAnswered(u) ? ", answered" : ", unanswered") + (session.flags[u.key] ? ", marked for review" : "") + (locked ? ", locked" : ""), onclick: () => go(i) }, String(i + 1));
+      })),
+      h("div", { class: "row" },
+        h("button", { type: "button", class: "quiet", onclick: () => { const first = session.live.findIndex((u) => session.flags[u.key] && !session.locked[u.key]); if (first >= 0) go(first); }, disabled: !session.live.some((u) => session.flags[u.key] && !session.locked[u.key]) }, "Review marked"),
+        h("button", { type: "button", class: "quiet", onclick: () => { const first = session.live.findIndex((u) => !isAnswered(u) && !session.locked[u.key]); if (first >= 0) go(first); }, disabled: !session.live.some((u) => !isAnswered(u) && !session.locked[u.key]) }, "Review unanswered"))
+    );
+    const confirmBox = h("div", { class: "notice", hidden: true },
+      h("p", null, (session.live.length - answered) ? "You have " + (session.live.length - answered) + " unanswered questions. They will be scored as incorrect. " : "", "After you end the exam you can't change any answer."),
+      h("div", { class: "row", style: "margin-top:8px" },
+        h("button", { type: "button", class: "danger", onclick: () => finishExam(false) }, "End exam now"),
+        h("button", { type: "button", class: "quiet", onclick: () => { confirmBox.hidden = true; } }, "Cancel")));
+    panel.append(h("div", { class: "row" }, h("button", { type: "button", onclick: () => { confirmBox.hidden = false; } }, "End exam")), confirmBox);
+    main.append(panel);
+  }
+
+  // ---------- rendering: results ----------
+  let resultFilter = "wrong";
+  function renderResults() {
+    const main = $("main");
+    const r = session.results;
+    const pass = r.score >= r.passing;
+    const summary = h("section", { class: "panel", "aria-labelledby": "resH" },
+      h("h2", { id: "resH" }, session.timeUp ? "Time is up. Your results" : "Your results"),
+      h("div", { class: "score" },
+        h("div", null, h("div", { class: "label" }, "Score"), h("div", { class: "big", text: String(r.score) }), h("div", { class: "small muted", text: "of 1000 · pass mark " + r.passing })),
+        h("span", { class: "pill " + (pass ? "ok" : "bad"), style: "font-size:1rem;padding:4px 14px", text: pass ? "Pass" : "Fail" }),
+        h("div", { class: "small muted", style: "max-width:46ch" }, (Math.round(r.pts * 10) / 10) + " of " + r.total + " items correct (" + Math.round(r.pct * 100) + " %), partial credit included" + (session.cfg.mode === "learn" ? ", scored on your first check of each question" : "") + ". Time used " + fmtTime((session.finishedAt || Date.now()) - session.startedAt) + ". The real exam uses a scaled score, so treat this as an estimate.")),
+      h("div", { class: "bar", "aria-hidden": "true" }, h("span", { style: "width:" + Math.round(r.pct * 100) + "%" }), h("span", { class: "mark", style: "left:" + (r.passing / 10) + "%" })),
+      h("div", { class: "label", style: "margin-top:6px" }, "By domain"),
+      h("div", { style: "display:flex;flex-direction:column;gap:8px" }, Object.entries(r.byDomain).sort().map(([d, v]) => {
+        const p = v.n ? v.pts / v.n : 0;
+        return h("div", { class: "dom-row" },
+          h("span", { class: "mono", text: d }),
+          h("span", { text: domainName(d) }),
+          h("div", { class: "bar" }, h("span", { style: "width:" + Math.round(p * 100) + "%;background:" + (p >= 0.85 ? "var(--ok)" : p >= 0.7 ? "var(--warn)" : "var(--bad)") })),
+          h("span", { class: "mono small", style: "text-align:right", text: Math.round(p * 100) + " %" }));
+      })),
+      h("div", { class: "row", style: "margin-top:6px" },
+        h("button", { type: "button", onclick: () => { const ids = [...new Set(r.per.filter((x) => x.pts < 1).map((x) => x.u.qid))]; if (ids.length) startExam(session.cfg, ids); }, disabled: !r.per.some((x) => x.pts < 1) }, "Retake the ones I missed"),
+        h("button", { type: "button", class: "secondary", onclick: () => copyErrors(r) }, "Copy mistakes for my error log"),
+        canSave() ? h("button", { type: "button", class: "quiet", onclick: () => saveFile("gh600-attempt-" + new Date(session.finishedAt).toISOString().slice(0, 16).replace(/[:T]/g, "-") + ".json", JSON.stringify(exportAttempt(r), null, 2)) }, "Export results") : null,
+        h("button", { type: "button", class: "quiet", onclick: () => { session = null; view = "start"; render(); } }, "New exam")),
+      h("p", { id: "copyMsg", class: "small muted", role: "status" })
+    );
+    main.append(summary);
+
+    const list = h("section", { class: "panel", "aria-labelledby": "detH" });
+    const filterSel = h("select", { id: "resFilter", "aria-label": "Show", onchange: (e) => { resultFilter = e.target.value; render(); } },
+      h("option", { value: "wrong", text: "Incorrect and partly correct", selected: resultFilter === "wrong" }),
+      h("option", { value: "all", text: "All questions", selected: resultFilter === "all" }));
+    list.append(h("div", { class: "row" }, h("h2", { id: "detH" }, "Answers and explanations"), h("span", { class: "spacer", style: "flex:1" }), filterSel));
+    const rows = r.per.map((x, i) => Object.assign({ n: i + 1 }, x)).filter((x) => resultFilter === "all" || x.pts < 1);
+    if (!rows.length) list.append(h("p", { class: "muted" }, "Every item was correct."));
+    rows.forEach((x) => list.append(resultItem(x)));
+    main.append(list);
+  }
+  function describeAnswer(u, a) {
+    if (a === undefined || a === null) return "No answer";
+    switch (u.kind) {
+      case "single": { const i = (u.optOrder || []).indexOf(a); return (i >= 0 ? letters[i] + ". " : "") + (u.q.options.find((o) => o.id === a) || {}).text; }
+      case "multiple": return a.map((id) => { const i = (u.optOrder || []).indexOf(id); return (i >= 0 ? letters[i] + ". " : "") + (u.q.options.find((o) => o.id === id) || {}).text; }).join("  |  ");
+      case "yesno": return a === "yes" ? "Yes" : "No";
+      case "order": return a.map((id, i) => (i + 1) + ". " + (u.q.items.find((x) => x.id === id) || {}).text).join("  ");
+      case "dropdown": return Object.keys(u.q.blanks).map((k) => k + " = " + (a[k] || "—")).join(", ");
+    }
+    return "";
+  }
+  function correctAnswer(u) {
+    switch (u.kind) {
+      case "single": case "multiple": return u.q.answer.map((id) => { const i = (u.optOrder || []).indexOf(id); return (i >= 0 ? letters[i] + ". " : "") + u.q.options.find((o) => o.id === id).text; }).join("  |  ");
+      case "yesno": return u.itemObj.answer === "yes" ? "Yes" : "No";
+      case "order": return u.q.answer.map((id, i) => (i + 1) + ". " + u.q.items.find((x) => x.id === id).text).join("  ");
+      case "dropdown": return Object.entries(u.q.blanks).map(([k, b]) => k + " = " + b.answer).join(", ");
+    }
+    return "";
+  }
+  function stemText(u) { return u.kind === "yesno" ? u.itemObj.statement : u.q.stem; }
+  function resultItem(x) {
+    const u = x.u, a = session.answers[u.key];
+    const status = x.pts === 1 ? ["ok", "Correct"] : x.pts > 0 ? ["warn", Math.round(x.pts * 100) + " %"] : !x.answered ? ["idle", "Unanswered"] : ["bad", "Incorrect"];
+    const preview = String(stemText(u)).replace(/[*`]/g, "").replace(/\s+/g, " ").slice(0, 140);
+    const d = h("details", { class: "result-item" },
+      h("summary", null, h("span", { class: "mono", text: "Q" + x.n }), h("span", { class: "pill " + status[0], text: status[1] }), h("span", { class: "mono small muted", text: u.domain || "" }), h("span", { class: "stem-preview", text: preview + (preview.length >= 140 ? "…" : "") })));
+    d.addEventListener("toggle", () => {
+      if (!d.open || d.dataset.filled) return;
+      d.dataset.filled = "1";
+      if (u.section && u.section.type === "case") d.append(h("div", { class: "scenario" }, h("h3", { text: u.section.title || "Case study" }), prose(u.section.scenario)));
+      if (u.section && u.section.type === "yesno") d.append(prose(u.section.scenario));
+      if (u.kind === "dropdown") { d.append(prose(u.q.stem)); d.append(h("pre", { class: "hot", text: String(u.q.template).replace(/\[\[(\w+)\]\]/g, "[ $1 ]") })); }
+      else d.append(prose(stemText(u)));
+      if (u.kind === "single" || u.kind === "multiple") d.append(h("ol", { type: "A", style: "margin:0;padding-left:22px" }, (u.optOrder || u.q.options.map((o) => o.id)).map((id) => h("li", { html: inline(u.q.options.find((o) => o.id === id).text) }))));
+      d.append(h("div", { class: "ans-grid" }, h("span", { class: "label" }, "Your answer"), h("span", { html: inline(describeAnswer(u, a)) }), h("span", { class: "label" }, "Correct"), h("span", { html: inline(correctAnswer(u)) })));
+      d.append(feedbackBox(u, true));
+    });
+    return d;
+  }
+  function copyErrors(r) {
+    const lines = r.per.filter((x) => x.pts < 1).map((x) => (x.u.domain || "—") + " · " + String(stemText(x.u)).replace(/[*`]/g, "").replace(/\s+/g, " ").slice(0, 110) + " · " + session.bankTitle + " #" + x.u.key);
+    const text = lines.join("\n") || "No mistakes.";
+    const msg = $("copyMsg");
+    const done = () => { msg.textContent = "Copied " + lines.length + " lines. Paste them into the tracker's error log or send them to Claude."; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, msg)); else fallbackCopy(text, msg);
+  }
+  function fallbackCopy(text, msg) {
+    const ta = h("textarea", { readonly: true, style: "min-height:120px" }); ta.value = text;
+    msg.replaceChildren(h("span", null, "Copy isn't available here. Select the text below and copy it:"), ta);
+    ta.focus(); ta.select();
+  }
+  function exportAttempt(r) {
+    return { bankTitle: session.bankTitle, mode: session.cfg.mode, startedAt: new Date(session.startedAt).toISOString(), finishedAt: new Date(session.finishedAt).toISOString(), score: r.score, passing: r.passing, items: r.total, correct: Math.round(r.pts * 100) / 100,
+      byDomain: Object.fromEntries(Object.entries(r.byDomain).map(([d, v]) => [d, Math.round((v.pts / v.n) * 100)])),
+      answers: r.per.map((x) => ({ key: x.u.key, domain: x.u.domain, points: Math.round(x.pts * 100) / 100, answer: session.answers[x.u.key] ?? null })) };
+  }
+  const canSave = () => !!dl || standalone;
+  async function saveFile(name, data) {
+    if (!dl && standalone) {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([data], { type: "application/json" }));
+      a.download = name; document.body.append(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      return;
+    }
+    if (!dl) return;
+    try { await dl.save({ filename: name, data }); }
+    catch (e) { if (e && e.code === "unavailable") { dl = null; render(); } }
+  }
+
+  // ---------- persistence of attempts (db) ----------
+  async function saveAttempt() {
+    if (!session || !session.results || (!db && !standalone)) return;
+    const r = session.results;
+    const weakest = Object.entries(r.byDomain).map(([d, v]) => [d, v.pts / v.n]).sort((a, b) => a[1] - b[1])[0];
+    const record = { bankTitle: session.bankTitle, mode: session.cfg.mode, total: r.total, score: r.score, passing: r.passing, pct: Math.round(r.pct * 1000) / 10, weakest: weakest ? weakest[0] : null, startedAt: session.startedAt, finishedAt: session.finishedAt,
+        byDomain: Object.fromEntries(Object.entries(r.byDomain).map(([d, v]) => [d, Math.round((v.pts / v.n) * 100)])),
+        missed: r.per.filter((x) => x.pts < 1).map((x) => x.u.key) };
+    if (!db) { attempts = (storeGet(ATTEMPTS_KEY) || []).concat([record]).slice(-200); storeSet(ATTEMPTS_KEY, attempts); return; }
+    try { await db.collection("attempts").add(record); } catch { /* history is optional */ }
+  }
+
+  // ---------- action bar ----------
+  $("btnPrev").addEventListener("click", () => go(session.idx - 1));
+  $("btnNext").addEventListener("click", () => {
+    const u = cur();
+    if (session.cfg.mode !== "exam" && isAnswered(u) && !session.revealed[u.key]) { reveal(u); return; }   // first Next shows the result
+    if (session.idx === session.live.length - 1) openReview(); else go(session.idx + 1);
+  });
+  $("btnReview").addEventListener("click", openReview);
+  $("btnFlag").addEventListener("click", () => { const u = cur(); session.flags[u.key] = !session.flags[u.key]; if (!session.flags[u.key]) delete session.flags[u.key]; persist(); updateBar(); });
+  $("btnCheck").addEventListener("click", () => reveal(cur()));
+
+  // ---------- boot ----------
+  async function boot() {
+    try {
+      const res = await fetch("questions.json", { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const b = await res.json();
+      if (!setBank(b, "questions.json")) bankSource = "";
+    } catch {
+      try { const eb = JSON.parse($("embeddedBank").textContent || "null"); if (eb) setBank(eb, "built-in bank"); } catch { /* no embedded bank */ }
+    }
+    try { const r = await fetch("banks/index.json", { cache: "no-store" }); if (r.ok) { const c = await r.json(); if (Array.isArray(c)) catalog = c.filter((x) => x && x.file && x.title); } } catch { /* no catalog */ }
+    render();
+    const cl = window.claude;
+    if (cl && cl.use) {
+      const [dbNs, dlNs] = await Promise.all([cl.use("db").catch(() => null), cl.use("downloads").catch(() => null)]);
+      dl = dlNs;
+      if (dbNs) {
+        db = dbNs;
+        const t = setTimeout(() => { if (dbState === "pending") { dbState = "none"; if (view === "start") render(); } }, 10000);
+        db.collection("attempts").onSnapshot((qs) => { clearTimeout(t); dbState = "ready"; attempts = qs.docs.map((d) => Object.assign({ id: d.id }, d.data())); if (view === "start") render(); },
+          () => { clearTimeout(t); dbState = "none"; if (view === "start") render(); });
+      } else { dbState = "none"; }
+      if (view === "start") render();
+    } else { dbState = "local"; attempts = storeGet(ATTEMPTS_KEY) || []; render(); }
+  }
+  boot();
+})();
+</script>
+
+</body></html>
