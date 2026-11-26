@@ -205,7 +205,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     <button class="quiet" id="btnPrev" type="button">‹ Previous</button>
     <button class="quiet flag-btn" id="btnFlag" type="button" aria-pressed="false">Mark for review</button>
     <span class="spacer"></span>
-    <button class="secondary" id="btnCheck" type="button" hidden>Check answer</button>
+    <button class="secondary" id="btnCheck" type="button" hidden>Check</button>
     <button class="quiet" id="btnReview" type="button">Review</button>
     <button id="btnNext" type="button">Next ›</button>
   </div>
@@ -561,7 +561,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       form.append(
         h("h2", { id: "cfgH" }, "Settings"),
         h("div", { class: "grid2" },
-          h("div", { class: "field" }, h("span", null, "Mode"), modeSeg, h("p", { class: "small muted" }, "Exam: timed, locked sections, answers at the end. Practice: your answer is checked when you press Next, so you can change your mind until then. Learn: the same, plus why each option is right or wrong and Try again.")),
+          h("div", { class: "field" }, h("span", null, "Mode"), modeSeg, h("p", { class: "small muted" }, "Exam: timed, locked sections, answers at the end. Practice: check each answer with Check, or when you press Next; you can change it until then. Learn: the same, plus why each option is right or wrong and Try again.")),
           h("div", { class: "field" }, h("span", null, "Number of questions"), h("input", { type: "number", id: "cfgCount", min: "1", max: String(bank.questions.length), value: String(Math.min(cfg.count || bank.questions.length, bank.questions.length)) }), h("p", { class: "small muted" }, "Out of " + bank.questions.length + ". A Yes/No series or case study counts as one question but holds several scored items.")),
           h("div", { class: "field" }, h("span", null, "Time limit (minutes, exam mode)"), h("input", { type: "number", id: "cfgMinutes", min: "1", max: "300", value: String(cfg.minutes || 45) }), h("p", { class: "small muted" }, "The real GH-600 allows 120 minutes for about 40–60 questions."))
         ),
@@ -733,7 +733,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     if (mode === "learn") {
       const bar = h("div", { class: "learnbar" });
       if (!revealed) {
-        bar.append(h("span", { class: "small muted", text: "Press Next to check your answer." }),
+        bar.append(h("span", { class: "small muted", text: "Press Check, or Next, to see whether you're right." }),
           h("button", { type: "button", class: "quiet", onclick: () => reveal(u) }, "Show answer"));
       } else {
         bar.append(h("button", { type: "button", class: "secondary", onclick: () => { delete session.answers[u.key]; delete session.revealed[u.key]; persist(); render(); } }, "Try again"));
@@ -777,7 +777,8 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     $("btnFlag").textContent = session.flags[u.key] ? "Marked for review" : "Mark for review";
     const pendingCheck = !exam && isAnswered(u) && !session.revealed[u.key];
     $("btnNext").textContent = pendingCheck ? "Next: check answer ›" : (session.idx === session.live.length - 1 ? "Review ›" : "Next ›");
-    $("btnCheck").hidden = true;
+    $("btnCheck").hidden = exam || !!session.revealed[u.key];
+    $("btnCheck").disabled = !isAnswered(u);
     $("sbCount").textContent = "Question " + (session.idx + 1) + " of " + session.live.length;
   }
 
