@@ -95,6 +95,17 @@ button.secondary { background: var(--paper); color: var(--accent); }
 button.quiet { background: transparent; border-color: var(--line); color: var(--ink); font-weight: 500; }
 button.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tabs button { background: transparent; color: var(--muted); border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 8px 14px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.guide-mod summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.guide-mod summary h3 { margin: 0; font-size: 1.05rem; display: inline; }
+.guide-mod ul { margin: 6px 0 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.guide-mod li { display: flex; gap: 8px; align-items: flex-start; }
+.guide-mod li input { margin-top: 4px; flex: none; }
+.guide-mod a { overflow-wrap: anywhere; }
+.guide-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 24px; margin-top: 10px; }
+.guide-cols h4 { margin: 0 0 4px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 .pill { display: inline-block; font-size: 0.78rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
 .pill.ok { background: var(--ok-soft); color: var(--ok); }
 .pill.bad { background: var(--bad-soft); color: var(--bad); }
@@ -619,6 +630,75 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     if (view === "learn") return renderLearn();
   }
 
+
+  // ---------- study guide (start page tab) ----------
+  const GUIDE_DONE_KEY = "gh600-guide-done-v1", TAB_KEY = "gh600-start-tab-v1";
+  const LRN = "https://learn.microsoft.com/en-us/training/modules/", GD = "https://docs.github.com/en/";
+  const GUIDE = {
+    official: [
+      ["Exam GH-600 study guide (skills measured and weights)", "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/gh-600"],
+      ["Certification page and exam registration", "https://learn.microsoft.com/en-us/credentials/certifications/agentic-ai-developer/"],
+      ["Exam duration and exam experience", "https://learn.microsoft.com/en-us/credentials/support/exam-duration-exam-experience"],
+      ["Exam sandbox (try the question formats)", "https://aka.ms/examdemo"],
+      ["Exam scoring and score reports", "https://learn.microsoft.com/en-us/credentials/certifications/exam-scoring-reports"],
+    ],
+    modules: [
+      { id: "M1", title: "Foundations of agentic AI in GitHub", domains: "General", slug: "foundations-agentic-ai",
+        units: [["2-define-agentic-ai", "Define agentic AI in the SDLC"], ["3-explain-agent-lifecycle-plan-act-evaluate", "Explain the agent lifecycle: plan, act, evaluate"], ["4-describe-github-system-record-control-plane", "GitHub as the system of record and control plane"], ["5-identify-risks-traceability", "Responsibilities, risks, anti-patterns, and traceability"], ["6-apply-contributor-model-agent-generated-work", "Apply the contributor model to agent-generated work"]],
+        docs: [["About pull requests", GD + "pull-requests/get-started/about-pull-requests"], ["Status checks reference", GD + "pull-requests/reference/status-checks"], ["About code owners", GD + "repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners"], ["Automatic token authentication (GITHUB_TOKEN)", GD + "actions/concepts/security/github_token"]] },
+      { id: "M2", title: "Design agent architecture and SDLC integration", domains: "D1", slug: "design-agent-architecture-integration",
+        units: [["2-agent-responsibilities", "Map agent responsibilities to the SDLC"], ["3-inputs-outputs-success-criteria", "Define inputs, outputs, and success criteria"], ["4-plan-reason-execution", "Separate planning, reasoning, and execution"], ["5-pull-request-governance-controls", "PR governance: templates, checks, CODEOWNERS, rules"], ["6-reliable-workflows", "Reliable workflows: outputs, contexts, triggers"], ["7-agent-operations-controls", "Observability, tools, MCP, secrets, hooks"]],
+        docs: [["Available rules for rulesets", GD + "repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets"], ["Pass job outputs", GD + "actions/how-tos/write-workflows/choose-what-workflows-do/pass-job-outputs"], ["Control jobs with conditions", GD + "actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions"], ["Deployments and environments", GD + "actions/reference/workflows-and-actions/deployments-and-environments"], ["Custom agents configuration", GD + "copilot/reference/custom-agents-configuration"], ["About hooks", GD + "copilot/concepts/customizations/hooks"]] },
+      { id: "M3", title: "Agent tooling, MCP, and execution environments", domains: "D2", slug: "agent-tooling-mcp-execution-environments",
+        units: [["2-interact-github-apis-workflows", "How agents interact with GitHub APIs and workflows"], ["3-model-context-protocol-servers-registries-allow-lists", "MCP servers, registries, and allow lists"], ["4-execution-context-boundaries", "Execution context and boundaries"], ["5-agent-execution-limits-protections", "Agent execution limits and protections"]],
+        docs: [["Configure MCP servers for the cloud agent", GD + "copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers"], ["MCP private registry enforcement", GD + "copilot/reference/enterprise-administrators/mcp-private-registry-enforcement"], ["Customize the agent environment (copilot-setup-steps)", GD + "copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/customize-the-agent-environment"], ["Secrets and variables for the cloud agent", GD + "copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/configure-secrets-and-variables"], ["Customize the firewall", GD + "copilot/how-tos/copilot-on-github/customize-copilot/customize-the-firewall"], ["Risks and mitigations of the cloud agent", GD + "copilot/concepts/security-governance-and-network-settings/risks-and-mitigations"], ["Trigger a workflow (GITHUB_TOKEN limits)", GD + "actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow"], ["GitHub Agentic Workflows: how they work", "https://github.github.com/gh-aw/introduction/how-they-work/"]] },
+      { id: "M4", title: "Multi-agent systems and orchestration", domains: "D5", slug: "multi-agent-systems-orchestration",
+        units: [["2-multi-agent-responsibilities", "Define multi-agent responsibilities"], ["3-agent-orchestration-github-workflows", "Orchestrate agents using GitHub workflows"], ["4-execution-isolation-permissions-concurrency", "Isolate execution: branches, permissions, concurrency"], ["5-conflict-resolution-github-arbitration", "Detect and resolve conflicts"], ["6-system-observability-evidence-workflows", "Observability: attribution, evidence, handoffs"], ["7-scale-failure-recovery", "Operate reliably at scale and recover from failure"]],
+        docs: [["Control workflow concurrency", GD + "actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency"], ["Events that trigger workflows (workflow_run)", GD + "actions/reference/workflows-and-actions/events-that-trigger-workflows"], ["Store and share data with artifacts", GD + "actions/tutorials/store-and-share-data"], ["Use the cloud agent from the CLI (gh agent-task)", GD + "copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-from-cli"], ["Custom agents configuration", GD + "copilot/reference/custom-agents-configuration"]] },
+      { id: "M5", title: "Memory, state, and evaluation", domains: "D3, D4", slug: "memory-state-evaluation",
+        units: [["2-agent-memory-strategies", "Implement agent memory strategies"], ["3-agent-state-context-drift", "Persist agent state and manage context drift"], ["4-memory-state-continuity", "Continuity across tools and environments"], ["5-evaluation-signals-quality-gates", "Evaluation signals and quality gates"], ["6-agent-failures-behavior-improvement", "Analyze agent failures and improve behavior"]],
+        docs: [["About Copilot Memory", GD + "copilot/concepts/prompting-and-context/copilot-memory"], ["Artifact and log retention", GD + "repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository"], ["Status checks reference (skipped vs pending)", GD + "pull-requests/reference/status-checks"], ["About dependency review", GD + "code-security/concepts/supply-chain-security/dependency-review"], ["Customization cheat sheet", GD + "copilot/reference/customization-cheat-sheet"]] },
+      { id: "M6", title: "Governance, guardrails, and operations", domains: "D6", slug: "governance-guardrails-operations",
+        units: [["2-define-risk-based-autonomy", "Define risk-based autonomy and action boundaries"], ["3-enforce-governance-github-controls", "Enforce governance with GitHub controls"], ["4-design-human-workflows", "Design human-in-the-loop workflows"], ["5-control-agent-capabilities", "Control agent capabilities using least privilege"], ["6-make-actions-observable-traceable-auditable", "Make actions observable, traceable, auditable"], ["7-maintain-governance-operational-reliability", "Maintain governance and operational reliability"]],
+        docs: [["Build guardrails for the cloud agent", GD + "copilot/tutorials/cloud-agent/build-guardrails"], ["Hooks reference", GD + "copilot/reference/hooks-reference"], ["About Copilot CLI (allow and deny tools)", GD + "copilot/concepts/copilot-surfaces/copilot-cli"], ["Manage environments", GD + "actions/how-tos/deploy/configure-and-manage-deployments/manage-environments"], ["OpenID Connect", GD + "actions/concepts/security/openid-connect"], ["Responsible use: agents", GD + "copilot/responsible-use/agents"]] },
+    ],
+    community: [
+      ["\"I passed the GH-600 exam\": format, topics and free labs (first-hand, Aug 2026)", "https://sameeraman.github.io/blog/2026/08/09/gh600-exam-reflections/"],
+      ["How I'm preparing for GH-600 (study method)", "https://tenthirtyam.org/dispatches/2026/06/06/how-im-preparing-for-gh-600-githubs-agentic-ai-developer-certification/"],
+      ["Short video series, one per domain (YouTube playlist)", "https://www.youtube.com/playlist?list=PLxgUmxsBhjMhyjJhNM9dxSCdJj2yExS2Y"],
+    ],
+  };
+  function renderGuide(main) {
+    const done = storeGet(GUIDE_DONE_KEY) || {};
+    const link = (t, u) => h("a", { href: u, target: "_blank", rel: "noopener", text: t });
+    const total = GUIDE.modules.reduce((n, m) => n + m.units.length, 0);
+    const read = () => Object.values(done).filter(Boolean).length;
+    const progress = h("span", { class: "pill idle" });
+    const upd = () => { progress.textContent = read() + " of " + total + " units read"; };
+    upd();
+    main.append(h("section", { class: "panel" },
+      h("div", { class: "row" }, h("h2", { style: "margin:0" }, "Study guide"), progress),
+      h("p", { class: "muted", style: "max-width:70ch" }, "Read each Microsoft Learn module first, then the GitHub Docs pages for depth. Where the two disagree, GitHub Docs describe how the product works. Tick a unit when you've read it (saved in this browser)."),
+      h("div", null, h("h4", { class: "label" }, "Official"), h("ul", null, GUIDE.official.map(([t, u]) => h("li", null, link(t, u)))))));
+    GUIDE.modules.forEach((m, i) => {
+      const unitsRead = m.units.filter(([s]) => done[m.id + "/" + s]).length;
+      const count = h("span", { class: "small muted", text: unitsRead + "/" + m.units.length + " read" });
+      main.append(h("section", { class: "panel" }, h("details", { class: "guide-mod", open: i === 0 || (unitsRead > 0 && unitsRead < m.units.length) },
+        h("summary", null, h("span", { class: "mono small", text: m.id }), h("h3", { text: m.title }), h("span", { class: "pill idle", text: m.domains }), count),
+        h("div", { class: "guide-cols" },
+          h("div", null, h("h4", { text: "Microsoft Learn" }),
+            h("p", { class: "small", style: "margin:0 0 4px" }, link("Module overview", LRN + m.slug + "/")),
+            h("ul", null, m.units.map(([slug, title]) => {
+              const key = m.id + "/" + slug;
+              const cb = h("input", { type: "checkbox", checked: !!done[key], "aria-label": "Read: " + title, onchange: () => { done[key] = cb.checked; storeSet(GUIDE_DONE_KEY, done); upd(); count.textContent = m.units.filter(([s]) => done[m.id + "/" + s]).length + "/" + m.units.length + " read"; } });
+              return h("li", null, cb, link(title, LRN + m.slug + "/" + slug));
+            }))),
+          h("div", null, h("h4", { text: "GitHub Docs (depth)" }), h("ul", null, m.docs.map(([t, u]) => h("li", null, link(t, u)))))))));
+    });
+    main.append(h("section", { class: "panel" },
+      h("h4", { class: "label" }, "Community (unofficial, check against the docs)"),
+      h("ul", null, GUIDE.community.map(([t, u]) => h("li", null, link(t, u))))));
+  }
   function renderStart(message) {
     const main = $("main");
     main.replaceChildren();
@@ -637,6 +717,11 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
           h("button", { type: "button", class: "quiet", onclick: () => { storeSet(SESSION_KEY, null); renderStart(); } }, "Discard")
         )));
     }
+
+    const tab = storeGet(TAB_KEY) || "exam";
+    main.append(h("div", { class: "tabs", role: "tablist" },
+      [["exam", "Exam room"], ["guide", "Study guide"]].map(([k, t]) => h("button", { type: "button", role: "tab", "aria-selected": String(tab === k), onclick: () => { storeSet(TAB_KEY, k); renderStart(); } }, t))));
+    if (tab === "guide") { renderGuide(main); return; }
 
     // Intro
     main.append(h("section", { class: "panel" },
