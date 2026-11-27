@@ -1,0 +1,422 @@
+"""Builds banks/m3.json (lessons + questions for Learn module M3) and sources/m3.md (fact sheet)."""
+import json, sys
+
+L = "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/"
+L2, L3, L4, L5 = L + "2-interact-github-apis-workflows", L + "3-model-context-protocol-servers-registries-allow-lists", L + "4-execution-context-boundaries", L + "5-agent-execution-limits-protections"
+TOKEN = "https://docs.github.com/en/actions/concepts/security/github_token"
+GHAW = "https://github.github.com/gh-aw/introduction/how-they-work/"
+SAFE = "https://github.github.com/gh-aw/reference/safe-outputs/"
+MCPCFG = "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers"
+ENF = "https://docs.github.com/en/copilot/reference/enterprise-administrators/mcp-allowlist-enforcement"
+REGACC = "https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-mcp-usage/configure-mcp-server-access"
+AGCFG = "https://docs.github.com/en/copilot/reference/custom-agents-configuration"
+CLOUD = "https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-cloud-agent"
+RISK = "https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/risks-and-mitigations"
+WFS = "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax"
+ENV = "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments"
+TRACK = "https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/track-copilot-sessions"
+CLI = "https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-from-cli"
+SECRETS = "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/configure-secrets-and-variables"
+
+UNIT_LEARN = {"U2": L2, "U3": L3, "U4": L4, "U5": L5}
+SKILL = {
+    "tools": "Select and configure agent tools",
+    "mcp": "Configure MCP servers",
+    "env": "Integrate agents within development environments",
+    "safe": "Operate agents with safe execution paths and robust error handling",
+}
+
+def N(cid, skill, status, title, body, example=None, depth=None, watch=None, sources=()):
+    unit = cid.split("-")[1]
+    d = {"id": cid, "module": "M3", "unit": unit, "domain": "D2", "skill": SKILL[skill], "status": status,
+         "title": title, "body": body, "learn": UNIT_LEARN[unit], "sources": list(sources)}
+    if example: d["example"] = example
+    if depth: d["depth"] = depth
+    if watch: d["watch"] = watch
+    return d
+
+nuggets = [
+ # ---------------- U2
+ N("M3-U2-C1", "env", "confirmed", "Every agent action is an authenticated API call",
+   "Agents don't have a private way into GitHub. To create a branch, commit, open a pull request or start a workflow, they call the same GitHub APIs a developer's tools use.\n\nEvery call carries a token: a personal access token, a GitHub App token, or the `GITHUB_TOKEN` of a workflow. The token decides what the agent may do, and it's why every action is permission-controlled and shows up in the audit trail.",
+   example="An agent step in a workflow comments on a pull request. It can do that only because the job's `GITHUB_TOKEN` has `pull-requests: write`.",
+   depth="`GITHUB_TOKEN` is created per job, works only on the repository that runs the workflow, and expires when the job ends. For work across several repositories, a GitHub App installation token is the least-privilege choice: short-lived, scoped to the repositories where the app is installed, and attributed to the app instead of a person.",
+   watch="\"What can the agent do?\" is really \"what can its token do?\". An instruction such as \"only open pull requests\" doesn't limit anything; the token's permissions do.",
+   sources=[TOKEN]),
+ N("M3-U2-C2", "env", "learn-only", "Agents follow the developer's path: branch, commit, pull request",
+   "When an agent changes a repository, it uses the standard sequence: choose a base branch, create a working branch, change files, commit, and open a pull request. There's a separate API operation for each step.\n\nThe point is alignment: agent work arrives in the same shape as human work, so the same reviews, checks and rules apply to it.",
+   example="Asked to fix a bug, Copilot cloud agent creates `copilot/fix-order-total` from `main`, pushes commits there and opens a pull request into `main`.",
+   watch="An answer that has the agent pushing straight to the default branch, or deploying from its own session, is describing the anti-pattern.",
+   sources=[CLOUD]),
+ N("M3-U2-C3", "env", "confirmed", "Traditional workflows and Agentic Workflows do different jobs",
+   "A traditional GitHub Actions workflow is deterministic: you write every step, trigger and condition in YAML. Use it for build, test and deploy.\n\nA GitHub Agentic Workflow describes the outcome in Markdown and lets a coding agent work out the steps, inside guardrails set in the frontmatter. It suits open-ended but bounded tasks: issue triage, reports, documentation upkeep, CI failure analysis, code improvement.\n\nAgentic Workflows extend CI/CD (\"Continuous AI\"). They don't replace it.",
+   example="Building and testing every pull request stays a YAML workflow. A daily \"repository status\" issue written by an agent is an Agentic Workflow.",
+   watch="If a scenario needs the same result every time (a release pipeline, a required check), the answer is a traditional workflow, not an agentic one.",
+   sources=[GHAW]),
+ N("M3-U2-C4", "tools", "confirmed", "Anatomy of an Agentic Workflow: frontmatter sets the limits, Markdown sets the intent",
+   "An Agentic Workflow file has two parts:\n\n- **Frontmatter** (YAML between `---` lines): triggers (`on:`), `permissions:`, `tools:` and `safe-outputs:`. These are the boundaries.\n- **Markdown body**: the task in natural language. This is the intent.\n\nThe file is compiled into a lock file (`.lock.yml`), which is the ordinary workflow GitHub Actions actually runs.",
+   example="`permissions:` are all `read`, and `safe-outputs: create-issue` with a title prefix is the only write allowed. The body says \"Create a daily report for maintainers\".",
+   depth="The agent job runs read-only. A separate job holds the write permission and applies only outputs that match what `safe-outputs` declares, so an injected instruction can't make the agent write anything else.",
+   watch="Changing what the agent may do means changing the frontmatter and recompiling. Text in the Markdown body can't grant permissions.",
+   sources=[GHAW, SAFE]),
+ N("M3-U2-C5", "safe", "confirmed", "Agent sessions are visible, and you can steer them",
+   "An agent session isn't a black box. While it runs you can follow the session log, see each action the agent takes, give feedback or adjust the task, and then review the pull request it produces. The agent adapts and keeps working until the task is complete.\n\nWorkflows that validate its work can start in three ways: automatically on events such as `push` or `pull_request`, manually with `workflow_dispatch`, or through the API.",
+   example="Half-way through, you see in the log that the agent is refactoring a file you didn't ask about. You comment on the pull request with `@copilot` to correct it, and it pushes a new commit.",
+   depth="From a terminal, `gh agent-task view <pr> --log --follow` streams the same session log (public preview).",
+   sources=[TRACK, CLI]),
+ # ---------------- U3
+ N("M3-U3-C1", "mcp", "confirmed", "An MCP server exposes tools; it can be local or remote",
+   "Model Context Protocol (MCP) is a standard way for AI clients to use external tools. An MCP server sits between the agent and a system: it lists the tools it offers, accepts structured requests, and performs the real action.\n\nA **local** server runs on your machine: more control, access to local resources. A **remote** server is hosted and reached over the network: less setup, the same server everywhere.",
+   example="The GitHub MCP server gives an agent tools for repositories, issues and pull requests.",
+   depth="For Copilot cloud agent, MCP servers are configured as JSON in the repository's Settings → Copilot → MCP servers. The top-level key is `mcpServers`, each server has a `type` (`local`, `stdio`, `http` or `sse`) and a required `tools` list. The cloud agent supports MCP tools only, not resources or prompts.",
+   watch="Once a server is configured for the cloud agent, Copilot can call its tools without asking for approval. That's why the `tools` list should name specific tools instead of `\"*\"`.",
+   sources=[MCPCFG]),
+ N("M3-U3-C2", "mcp", "confirmed", "The GitHub remote MCP server: HTTP type and one URL",
+   "In an IDE such as VS Code, you add the GitHub MCP server from Copilot Chat in Agent mode (Tools → Add MCP server). For the remote server you choose **HTTP** as the type, enter `https://api.githubcopilot.com/mcp/`, choose the scope (this workspace or all workspaces) and authenticate with GitHub.\n\nRemote is the recommended setup for most users. GitHub Enterprise Server supports only the local server.",
+   example="`{ \"servers\": { \"github\": { \"type\": \"http\", \"url\": \"https://api.githubcopilot.com/mcp/\" } } }` in a workspace's MCP configuration.",
+   depth="Copilot cloud agent already has the GitHub MCP server enabled by default, with a token that has read-only access to the current repository. Reaching beyond that repository needs a token with broader access that you configure.",
+   watch="Remote = hosted URL + authentication. If an option pairs \"remote GitHub MCP server\" with a `localhost` address or a local command, it's wrong.",
+   sources=[MCPCFG]),
+ N("M3-U3-C3", "mcp", "confirmed", "A registry is a catalogue of MCP servers, with strict technical requirements",
+   "An MCP registry is a central catalogue where clients discover which servers exist and how to install them. IDEs use the GitHub MCP Registry by default, and an organisation or enterprise can point Copilot at a custom one.\n\nA custom registry must:\n\n- follow the MCP registry **v0.1** specification;\n- expose `GET /v0.1/servers` and the two `…/versions/…` endpoints over HTTPS;\n- send the CORS headers that let Copilot read it.\n\nYou can self-host the open-source registry, build your own, or use **Azure API Center**.",
+   example="With Azure API Center you enable anonymous access and enter only the base URL in the Copilot policy, without `/v0.1/servers`.",
+   watch="A registry makes servers discoverable. It doesn't block anything by itself; that's the allow list policy.",
+   sources=[REGACC]),
+ N("M3-U3-C4", "mcp", "confirmed", "The allow list policy: \"Allow all\" or \"Registry only\"",
+   "The allow list is a Copilot policy at organisation or enterprise level. First, **MCP servers in Copilot** must be enabled. Then **Restrict MCP access to registry servers** has two values:\n\n- **Allow all**: developers can use any MCP server.\n- **Registry only**: only servers listed in the configured registry.\n\nUnder Registry only, even local servers must be in the registry, and their server IDs must match exactly. The policy applies immediately, and it's tied to the organisation or enterprise that assigns the user's Copilot seat.",
+   example="Contoso lists four approved servers, one of them local, in its registry and selects Registry only. A developer's unlisted server stops working.",
+   depth="Enforcement happens in the clients (VS Code, Visual Studio, JetBrains, Copilot CLI and others, from specific versions). **Copilot in the cloud isn't in the list of enforcing surfaces**: the cloud agent is governed by its repository MCP configuration. Enforcement matches server names/IDs, is in public preview and can be bypassed by editing config files; GitHub recommends `managed-settings.json` for stronger restriction. With several seats, an enterprise policy beats an organisation policy, and Registry only beats Allow all.",
+   watch="Setting a registry URL while leaving \"Allow all\" restricts nothing. And a local server that isn't in the registry is blocked under Registry only.",
+   sources=[ENF, REGACC]),
+ N("M3-U3-C5", "mcp", "learn-only", "Server, registry, allow list: three different jobs",
+   "The three MCP concepts solve different parts of one problem:\n\n- The **server** exposes tools.\n- The **registry** makes servers discoverable and standard to install.\n- The **allow list** decides which servers are permitted.\n\nTogether they give agents more capabilities without the organisation losing control.",
+   example="Flow: the organisation publishes a registry and sets the policy → the developer's IDE discovers approved servers → the developer enables one → the agent uses its tools.",
+   watch="Questions often describe one need and offer all three as options. Ask: is this about *doing* (server), *finding* (registry) or *permitting* (allow list)?",
+   sources=[REGACC]),
+ # ---------------- U4
+ N("M3-U4-C1", "env", "learn-only", "Execution context: repository, branch, workflow, permissions",
+   "Execution context is the set of constraints that says where an agent operates and what it can reach. On GitHub it has four parts:\n\n- the **repository** it works in;\n- the **branch** it targets;\n- the **workflow** that runs its tasks;\n- the **permissions** granted to that workflow.\n\nThese decide both what the agent can see and what it can do. Without a defined context, agent behaviour is unpredictable and unsafe.",
+   example="An agent in CI could create releases nobody expected. The repository, branch and workflow were right; the workflow's token permissions were too broad.",
+   watch="When a scenario asks which boundary failed, map the symptom to one of the four. \"Changed the wrong repo\" is scope, \"changed main directly\" is branch, \"did more than it should\" is permissions.",
+   sources=[CLOUD]),
+ N("M3-U4-C2", "env", "confirmed", "Repository scope is the first boundary",
+   "Copilot cloud agent always works inside one repository. It reads and changes code there, and works with that repository's issues, pull requests and workflows. It has no access to other repositories unless that's explicitly granted.\n\nYou enable and configure it per repository: Settings → Copilot → Cloud.",
+   example="Asked to also update a shared library that lives in another repository, the agent can't. That's a separate task in that repository.",
+   depth="The agent's built-in GitHub MCP token has read-only access to the current repository only.",
+   watch="Don't \"fix\" a scope limit by handing the agent a broad personal token. Split the work per repository.",
+   sources=[CLOUD, MCPCFG]),
+ N("M3-U4-C3", "tools", "confirmed", "What a custom agent controls, and what it doesn't",
+   "A custom agent is a file in `.github/agents/` with the `.agent.md` extension. It defines what the agent may do (its `tools`) and how it behaves (its instructions).\n\nIt does **not** define branch creation, pull request behaviour or execution isolation. Those belong to the system that runs the agent: the cloud agent creates the branch and pull request itself, and in CI the workflow decides the branch.",
+   example="A `security-reviewer` agent whose tools are limited to reading and searching can analyse code but can't edit it, whatever its prompt says.",
+   depth="If `tools` is omitted, the agent gets all available tools. Tool restriction is enforced by the platform; instructions are guidance.",
+   watch="There's no agent-file setting for \"target branch\" or \"open a draft PR\". If an option invents one, discard it.",
+   sources=[AGCFG]),
+ N("M3-U4-C4", "env", "confirmed", "Branch-based scope: the agent builds on the base branch you choose",
+   "Agents never work directly on the main branch. The agent creates a new branch from the branch you selected, makes its changes there, and opens a pull request that targets that base branch.\n\nWhen you delegate a task you can choose a base branch other than the default one. The isolation is enforced by the execution context, not by the agent's own configuration.",
+   example="You delegate a task with base branch `release/2.4`. The agent creates `copilot/…` from it and its pull request targets `release/2.4`, not `main`.",
+   depth="The agent can push only to the branches it creates. From the CLI, `gh agent-task create \"…\" --base release/2.4` sets the base branch.",
+   watch="Unpushed local commits aren't on GitHub, so the agent can't see them. Push your branch before delegating.",
+   sources=[RISK, CLI]),
+ N("M3-U4-C5", "tools", "confirmed", "Permission boundaries: explicit and minimal",
+   "Permissions define what an agent can do inside its context. Workflows get them through tokens such as `GITHUB_TOKEN`, and they cover reading contents, writing code, creating pull requests and triggering workflows.\n\nThe rule: define permissions explicitly and keep them minimal.",
+   example="A nightly agent job that summarises changes and posts an issue comment needs `contents: read` and `issues: write`, and nothing else.",
+   depth="In `permissions:`, once you declare any scope, every scope you don't declare becomes `none`. Declare them at job level so only the job that needs a write permission has it.",
+   watch="`permissions: write-all`, or no `permissions:` key in a repository whose default is read and write, both break least privilege.",
+   sources=[WFS, TOKEN]),
+ N("M3-U4-C6", "safe", "learn-only", "Agentic Workflows are built for defence in depth",
+   "GitHub Agentic Workflows stack several guardrails:\n\n- **read-only tokens by default**, so the agent can inspect but not change;\n- **safe outputs**: the agent proposes, a separate gated step decides;\n- **zero secrets in the agent process**;\n- **sandboxed, containerised execution**;\n- **network isolation** with an allowlist for outbound access;\n- **threat detection** that scans proposed outputs before any write.\n\nTogether they reduce the risk of over-privileged agents, prompt injection and unintended changes.",
+   example="An issue contains hidden text telling the agent to close every other issue. The agent may propose it, but `close-issue` isn't a declared safe output, so nothing happens.",
+   watch="No single control is the answer to prompt injection. Look for the option that removes the agent's ability to write, not the one that asks it nicely.",
+   sources=[GHAW, SAFE]),
+ N("M3-U4-C7", "env", "learn-only", "Running an agent in CI: the workflow is the boundary",
+   "To run an agent as part of CI, you invoke it inside a workflow. The workflow fixes everything around it: the trigger (`workflow_dispatch`, `schedule`, `push`, `pull_request`), the `permissions:`, the runner, the checkout, the authentication, and the non-interactive command that runs the agent, optionally with a named custom agent.\n\nThe task runs on a defined runner, from a defined trigger, in one repository, with only the permissions granted to that workflow.",
+   example="A workflow on `schedule` checks out the repository and runs the agent with a prompt and no user interaction, with `permissions: contents: read`.",
+   watch="In CI nobody is there to approve a tool call. The limits must come from the workflow (permissions, secrets passed in), not from interactive prompts.",
+   sources=[WFS]),
+ # ---------------- U5
+ N("M3-U5-C1", "env", "confirmed", "Platform limits: one repository, a separate branch, a human decision",
+   "Copilot cloud agent works within limits it can't change: it has access only to the repository where it's working, and it makes its changes on a separate branch, never directly on the default branch.\n\nIt prepares changes for review; it doesn't finalise them. Reviewing, requesting updates, discarding or merging stays with you.",
+   example="The agent finishes and requests review. Nothing reaches `main` until a person approves and merges.",
+   depth="The agent can't merge its pull requests, and the person who asked Copilot for the work can't be the one who approves it.",
+   sources=[RISK]),
+ N("M3-U5-C2", "tools", "confirmed", "Repository and organisation settings limit what workflows can run",
+   "Agent work runs in workflows, and settings above the workflow file constrain it. Repository and organisation settings control which workflows and actions are allowed to run, and what `GITHUB_TOKEN` is permitted to do by default.",
+   example="An organisation allows only GitHub's own actions and verified creators, and sets the default workflow token to read-only. A workflow an agent writes can't pull in an unknown third-party action.",
+   depth="These live under Settings → Actions → General: the allowed-actions policy and \"Workflow permissions\". A workflow file can still request more with `permissions:`, which is why changes under `.github/workflows/` need review.",
+   sources=[TOKEN]),
+ N("M3-U5-C3", "safe", "confirmed", "Error handling: fail fast, never continue silently",
+   "Workflows should handle agent failures explicitly: stop when a step fails, log a meaningful message, and avoid leaving partial or inconsistent changes.\n\nA step fails the job by default. `continue-on-error: true` turns that off, which is how a failed agent step ends up followed by a commit of half-finished output.",
+   example="The agent step exits with an error, but the next step still commits and pushes. The agent step had `continue-on-error: true`.",
+   depth="`continue-on-error` defaults to `false`. Later steps run after a failure only if they opt in with `if: always()` or `if: failure()`, which is right for uploading logs and wrong for publishing results.",
+   sources=[WFS]),
+ N("M3-U5-C4", "safe", "learn-only", "Retries are for transient failures only",
+   "A retry helps when the failure is temporary: a network issue, a rate limit, a transient service error. You can re-run failed steps, add retry logic to a script, or structure the workflow so it's safe to run again.\n\nRetrying doesn't help when the cause is permanent: a failing test, a missing permission, a merge conflict. Those need a fix or a human.",
+   example="A call to the model API times out once; the second attempt succeeds. A `403` from a missing permission fails the same way every time.",
+   watch="A retry is only safe if the step can run twice without doing damage, for example without creating two pull requests. And a retry loop must still fail the job when every attempt fails.",
+   sources=[]),
+ N("M3-U5-C5", "safe", "learn-only", "Rollback: isolation first, revert second",
+   "If an agent produces incorrect or unsafe changes, rollback keeps them out of the main codebase. Most of it comes for free from the way agents work: changes sit on a branch behind a pull request, so closing or discarding the pull request undoes everything.\n\nIf the change was already merged, revert the commits.",
+   example="A merged agent pull request breaks `main`. You open a revert pull request, let the required checks run, and merge it; the fix comes later in a new pull request.",
+   watch="Force-pushing the default branch back to an old commit is not the rollback path: it rewrites history and a ruleset normally blocks it. Use a revert through a pull request.",
+   sources=[]),
+ N("M3-U5-C6", "safe", "learn-only", "Escalation and traceability: a human can step in, and everything leaves a record",
+   "**Escalation** means that when an agent can't finish or is unsure, a person takes over. Implement it by requiring pull request review, assigning reviewers automatically, or notifying maintainers from a workflow step.\n\n**Traceability** means every agent action can be inspected and attributed. GitHub provides it through workflow logs, commit history and pull request discussions. Clear commit messages and one branch per task make it better.",
+   example="An agent can't make the tests pass after several attempts. It says so in the pull request, which already has the code owners requested as reviewers.",
+   depth="CODEOWNERS is the built-in way to assign reviewers automatically; it becomes mandatory only when the ruleset requires review from code owners.",
+   sources=[]),
+ N("M3-U5-C7", "safe", "confirmed", "Environments protect deployments of agent-generated changes",
+   "When agent-generated changes are deployed, environments add safeguards. An environment can require approval before a job continues, restrict access to secrets, and control deployment targets.\n\nThis keeps sensitive operations from running automatically.",
+   example="The `deploy` job declares `environment: production`. It pauses until a required reviewer approves, and only then receives the production secrets.",
+   depth="Environment secrets reach only jobs that declare that environment. Referring to an environment name that doesn't exist creates a new one with no protection.",
+   watch="Environments gate jobs, not merges. A required reviewer on `production` doesn't stop a pull request being merged.",
+   sources=[ENV]),
+ N("M3-U5-C8", "env", "confirmed", "`GITHUB_TOKEN` doesn't start new workflow runs; other tokens can",
+   "Most actions performed with `GITHUB_TOKEN` don't trigger further workflow runs. That's deliberate: it prevents loops where a workflow keeps triggering itself.\n\nGitHub App tokens and personal access tokens can trigger further runs. That allows richer automation, and it also means you have to design against recursion.",
+   example="A workflow on `push` formats code and pushes the result. With `GITHUB_TOKEN` it stops there. With a personal token, that push triggers the workflow again.",
+   depth="The exceptions for `GITHUB_TOKEN` are `workflow_dispatch` and `repository_dispatch`, which do start runs. A pull request opened or updated with `GITHUB_TOKEN` gets runs that wait for approval from someone with write access.",
+   sources=[TOKEN]),
+]
+
+conflicts = [
+ {"module": "M3", "unit": "U3", "learnSays": "A local MCP server is added like a remote one, with a local endpoint such as `http://localhost:3000`.", "docsSay": "Local servers are normally started as a command over `stdio` (`type` `local` or `stdio` with `command` and `args`), not addressed by a localhost URL.", "source": MCPCFG},
+ {"module": "M3", "unit": "U4", "learnSays": "A custom agent file scopes files with `applyTo`, and its tools are named `read_file` and `search_files`.", "docsSay": "`applyTo` belongs to `*.instructions.md` files, not to agent files; check tool names in the custom agents configuration reference.", "source": AGCFG},
+ {"module": "M3", "unit": "U4", "learnSays": "The CI example runs `npx @github/copilot-cli` authenticated with `secrets.GITHUB_TOKEN`.", "docsSay": "The package and authentication details differ; check the Copilot CLI docs before copying the example.", "source": "https://docs.github.com/en/copilot/how-tos/copilot-cli/install-copilot-cli"},
+ {"module": "M3", "unit": "U5", "learnSays": "The agent \"doesn't automatically create a pull request\"; you decide whether to create one.", "docsSay": "Unit 2 of the same module, and the cloud agent docs, describe the agent opening the pull request itself. What is certain: it can't merge, and review stays with a human.", "source": CLOUD},
+ {"module": "M3", "unit": "U5", "learnSays": "The retry example loops three times with `&& break` and `sleep 5`.", "docsSay": "As written, the step succeeds even when all three attempts fail, because the last command is `sleep`. A retry loop must exit non-zero after the final failure.", "source": WFS},
+]
+
+def opt(i, text, why): return {"id": i, "text": text, "rationale": why}
+def Q(qid, nugget, typ, level, **kw):
+    unit = nugget.split("-")[1]
+    d = {"id": qid, "type": typ, "domain": "D2", "module": "M3", "unit": unit, "nugget": nugget, "level": level}
+    d.update(kw)
+    return d
+
+questions = [
+ # ---------------- U2
+ Q("m3-u2-app-token", "M3-U2-C1", "single", "apply",
+   stem="Contoso runs an automation agent that opens dependency-update pull requests in three repositories of the `contoso` organisation. It currently authenticates with a classic personal access token that belongs to a repository administrator.\n\nSecurity requires that the agent's actions are attributed to the automation and not to a person, that its credentials are short-lived, and that it can reach only those three repositories.\n\nWhat should you use?",
+   options=[opt("a", "The `GITHUB_TOKEN` of a workflow in one of the repositories, with `permissions: write-all`.", "Incorrect. `GITHUB_TOKEN` only works on the repository that runs the workflow, so it can't open pull requests in the other two."),
+            opt("b", "A fine-grained personal access token that belongs to a service account.", "Incorrect. It can be limited to three repositories, but it's long-lived and tied to a user account."),
+            opt("c", "A deploy key added to each of the three repositories.", "Incorrect. A deploy key gives git access to one repository; it can't call the API to open pull requests."),
+            opt("d", "An installation token from a GitHub App installed on only those three repositories.", "Correct. Installation tokens are short-lived, limited to the repositories where the app is installed and to its permissions, and actions are attributed to the app.")],
+   answer=["d"], explanation="Every agent action is an authenticated API call, so the token defines the agent's reach. A GitHub App gives short-lived, narrowly scoped credentials with their own identity.",
+   takeaway="Cross-repository automation → GitHub App installation token.", sources=[L2, TOKEN]),
+ Q("m3-u2-which-workflow", "M3-U2-C3", "match", "analyse", reuse=True,
+   stem="Your team is deciding which tasks to implement as traditional GitHub Actions workflows and which as GitHub Agentic Workflows.\n\nWhich type should you use for each task?",
+   choices=[{"id": "yaml", "text": "Traditional workflow (YAML)"}, {"id": "aw", "text": "Agentic Workflow"}],
+   targets=[{"id": "t1", "text": "Build and test every pull request as a required check.", "answer": "yaml", "rationale": "A required check must be deterministic and repeatable."},
+            {"id": "t2", "text": "Triage new issues: read them and suggest labels.", "answer": "aw", "rationale": "Open-ended but bounded, and it needs judgement about free text."},
+            {"id": "t3", "text": "Deploy a tagged release to production.", "answer": "yaml", "rationale": "Deployment needs explicit, predictable steps behind an environment gate."},
+            {"id": "t4", "text": "Analyse why a CI run failed and summarise the likely cause.", "answer": "aw", "rationale": "CI failure analysis is one of the tasks Agentic Workflows are designed for."},
+            {"id": "t5", "text": "Write a daily repository status report as an issue.", "answer": "aw", "rationale": "Reporting is a typical Continuous AI task."}],
+   explanation="Agentic Workflows extend CI/CD for open-ended, bounded tasks. Anything that must behave the same way every time stays a traditional workflow.",
+   takeaway="Deterministic → YAML. Open-ended but bounded → agentic. Agentic never replaces CI/CD.", sources=[L2, GHAW]),
+ Q("m3-u2-anatomy", "M3-U2-C4", "statements", "understand",
+   stem="You are reviewing a GitHub Agentic Workflow file.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.",
+   items=[{"id": "a", "statement": "The Markdown body is where you define the workflow's triggers and permissions.", "answer": "no", "explanation": "Triggers, permissions, tools and safe outputs go in the frontmatter. The body holds the instructions."},
+          {"id": "b", "statement": "GitHub Actions runs the lock file that is compiled from the Markdown file.", "answer": "yes", "explanation": "The workflow is compiled to a `.lock.yml` file, and that is what Actions executes."},
+          {"id": "c", "statement": "With all permissions set to `read`, the agent can still create an issue if `create-issue` is declared as a safe output.", "answer": "yes", "explanation": "The agent proposes the issue; a separate gated job with the write permission creates it."}],
+   takeaway="Frontmatter = boundaries, Markdown = intent, lock file = what runs, safe outputs = the only writes.", sources=[L2, GHAW, SAFE]),
+ Q("m3-u2-steer", "M3-U2-C5", "single", "apply",
+   stem="You assign an issue to GitHub Copilot cloud agent. Twenty minutes later the session log shows it's rewriting a module that's outside the issue's scope. The rest of its work is good and you want to keep it.\n\nWhat should you do?",
+   options=[opt("a", "Give the agent feedback on its pull request so that it adjusts its work and pushes a corrected commit.", "Correct. Sessions are interactive: you can adjust the task while the work is in progress, and the agent adapts."),
+            opt("b", "Close the pull request and assign the issue to the agent again.", "Incorrect. That discards the work you wanted to keep."),
+            opt("c", "Push a commit to the default branch that reverts the module.", "Incorrect. The agent's changes are on its own branch, not on the default branch, so there's nothing to revert there."),
+            opt("d", "Wait until the session ends, because a running session can't be influenced.", "Incorrect. Sessions are observable and you can provide feedback during them.")],
+   answer=["a"], explanation="Agent sessions are visible and interactive: monitor the log, give feedback, review the pull request.",
+   takeaway="Watch the session log and steer early; don't throw the work away.", sources=[L2, TRACK]),
+ # ---------------- U3
+ Q("m3-u3-remote-config", "M3-U3-C2", "dropdown", "apply",
+   stem="You are adding the GitHub **remote** MCP server to a VS Code workspace so that Copilot's agent can use it.\n\nHow should you complete the configuration? Select the correct option for each box.",
+   template="{\n  \"servers\": {\n    \"github\": {\n      \"type\": \"[[type]]\",\n      \"url\": \"[[url]]\"\n    }\n  }\n}",
+   blanks={"type": {"options": ["http", "stdio", "local"], "answer": "http", "rationale": "A remote server is reached over the network, so the type is HTTP. `stdio` and `local` start a process on your machine."},
+           "url": {"options": ["https://api.githubcopilot.com/mcp/", "http://localhost:3000", "https://api.github.com/v0.1/servers"], "answer": "https://api.githubcopilot.com/mcp/", "rationale": "This is the hosted GitHub MCP server. `localhost` would be a local server, and `/v0.1/servers` is a registry endpoint, not a server."}},
+   explanation="The remote GitHub MCP server is added as an HTTP server at `https://api.githubcopilot.com/mcp/`, then you authenticate with GitHub.",
+   takeaway="Remote GitHub MCP server = type HTTP + api.githubcopilot.com/mcp/ + sign in.", sources=[L3]),
+ Q("m3-u3-api-center", "M3-U3-C3", "multiple", "analyse", select=2,
+   stem="An enterprise administrator hosts the company's MCP registry in Azure API Center and enters `https://contoso.data.eastus.azure-apicenter.ms/v0.1/servers` as the MCP Registry URL in the Copilot policy. Developers' IDEs show no servers from the registry.\n\nWhich two changes should the administrator make? Each correct answer presents part of the solution.",
+   options=[opt("a", "Enable anonymous access on the API Center registry.", "Correct. Copilot must be able to fetch the registry without credentials."),
+            opt("b", "Enter only the base URL of the API Center endpoint, without `/v0.1/servers`.", "Correct. For Azure API Center the policy takes the base URL only."),
+            opt("c", "Change the policy from \"Registry only\" to \"Allow all\".", "Incorrect. That removes the restriction; it doesn't make the registry readable."),
+            opt("d", "Add each developer's GitHub account as a reader on the API Center resource.", "Incorrect. Copilot reads the registry anonymously, not as each developer."),
+            opt("e", "Publish the registry over HTTP instead of HTTPS.", "Incorrect. The registry endpoints must be served over HTTPS.")],
+   answer=["a", "b"], explanation="Azure API Center can act as the MCP registry if anonymous access is enabled and the policy holds the base URL only.",
+   takeaway="Azure API Center registry: anonymous access + base URL only.", sources=[L3, REGACC]),
+ Q("m3-u3-registry-only", "M3-U3-C4", "yesno", "evaluate", goal="Does this meet the goal?",
+   scenario="This question is part of a series of questions that present the same scenario. Each question in the series contains a unique solution that might meet the stated goals.\n\nFabrikam has an MCP registry that lists three approved remote servers. Developers also need one approved **local** MCP server that reads build logs.\n\n**Goal:** developers must be able to use only approved MCP servers in their IDEs, including the local one.",
+   items=[{"id": "s1", "solution": "Enter the registry URL in the Copilot policy, select **Registry only**, and add the local server to the registry with a server ID that exactly matches the installed server.", "answer": "yes", "explanation": "Registry only limits developers to registry servers, and a local server is permitted when it's listed with a matching ID."},
+          {"id": "s2", "solution": "Enter the registry URL in the Copilot policy and leave the restriction set to **Allow all**.", "answer": "no", "explanation": "With Allow all, developers can add any server. The registry only helps discovery."},
+          {"id": "s3", "solution": "Select **Registry only**, and tell developers to configure the local server by hand in their IDE because it doesn't need to be in the registry.", "answer": "no", "explanation": "Under Registry only, local servers must also be in the registry, so the hand-configured server is blocked."}],
+   takeaway="Registry only blocks everything not in the registry, local servers included; Allow all restricts nothing.", sources=[L3, ENF]),
+ Q("m3-u3-cloud-agent", "M3-U3-C4", "single", "analyse",
+   stem="An organisation sets the Copilot MCP policy to **Registry only**. A week later, an audit shows that GitHub Copilot cloud agent in one repository uses an MCP server that isn't in the registry. The server is defined in that repository's Copilot settings.\n\nWhat is the most likely explanation?",
+   options=[opt("a", "The policy takes up to 30 days to apply to existing repositories.", "Incorrect. The policy applies immediately to the clients that enforce it."),
+            opt("b", "The registry allow list is enforced by IDE and CLI clients; the cloud agent uses the MCP configuration of its repository.", "Correct. Copilot in the cloud isn't among the surfaces that enforce the allow list, so its MCP servers are governed by the repository configuration."),
+            opt("c", "The server's ID in the registry differs in letter case from the installed server.", "Incorrect. A mismatched ID would block a server under Registry only, not allow an unlisted one."),
+            opt("d", "The repository administrator's Copilot seat is assigned by a different organisation.", "Incorrect. Seat assignment decides which policy applies to a user's clients; it doesn't explain the cloud agent's behaviour.")],
+   answer=["b"], explanation="Allow list enforcement happens in specific clients. For the cloud agent, review the repository's MCP configuration and keep its `tools` list narrow.",
+   takeaway="Registry only governs developers' clients; govern the cloud agent through its repository MCP configuration.", sources=[L3, ENF, MCPCFG]),
+ Q("m3-u3-three-roles", "M3-U3-C5", "match", "understand", reuse=False,
+   stem="You are explaining MCP governance to a new team.\n\nWhich component meets each need?",
+   choices=[{"id": "server", "text": "MCP server"}, {"id": "registry", "text": "MCP registry"}, {"id": "allow", "text": "Allow list policy"}, {"id": "fw", "text": "Cloud agent firewall"}],
+   targets=[{"id": "t1", "text": "Expose the ticketing system's operations as tools an agent can call.", "answer": "server", "rationale": "The server exposes tools and performs the real action."},
+            {"id": "t2", "text": "Let developers browse and install the company's approved servers from their IDE.", "answer": "registry", "rationale": "The registry is the catalogue used for discovery and standard installation."},
+            {"id": "t3", "text": "Prevent developers from using any server the company hasn't approved.", "answer": "allow", "rationale": "The allow list decides which servers are permitted."}],
+   explanation="Server exposes, registry discovers, allow list permits. The firewall limits the cloud agent's network access and isn't part of this model.",
+   takeaway="Doing = server. Finding = registry. Permitting = allow list.", sources=[L3]),
+ Q("m3-u3-tools-list", "M3-U3-C1", "single", "apply",
+   stem="You add a ticketing MCP server to GitHub Copilot cloud agent in a repository. The server offers tools to read, create and delete tickets. The agent only needs to read ticket details, and no one approves individual tool calls during a session.\n\nYou need to apply least privilege. What should you do?",
+   options=[opt("a", "Set `\"tools\": [\"*\"]` and tell the agent in its instructions to only read tickets.", "Incorrect. `*` enables every tool, and instructions don't restrict what the agent can call."),
+            opt("b", "Store the ticketing API key as an Agents secret named `COPILOT_MCP_TICKETS_KEY`.", "Incorrect. That's the right way to store the key, but it doesn't limit which tools can be called."),
+            opt("c", "List only the read tool in the server's `tools` property in the repository's MCP configuration.", "Correct. `tools` is the allowlist of tools Copilot may use from that server, and GitHub recommends specific read-only tools."),
+            opt("d", "Set the organisation's MCP policy to Registry only.", "Incorrect. That governs which servers developers' clients can use, not which tools the cloud agent may call.")],
+   answer=["c"], explanation="For the cloud agent, each MCP server's `tools` list is required and decides what can be called. Configured tools run without per-call approval, so the list is the control.",
+   takeaway="Cloud agent MCP: name the specific tools; never rely on `*` plus instructions.", sources=[L3, MCPCFG]),
+ # ---------------- U4
+ Q("m3-u4-base-branch", "M3-U4-C4", "single", "apply",
+   stem="A team maintains the release branch `release/2.4`. A developer wants GitHub Copilot cloud agent to fix a bug there, without bringing in unreleased changes from `main`.\n\nWhat should the developer do?",
+   options=[opt("a", "Add `branch: release/2.4` to the frontmatter of a custom agent file.", "Incorrect. Custom agents don't control branch creation or pull request behaviour."),
+            opt("b", "Select `release/2.4` as the base branch when delegating the task to the agent.", "Correct. The agent creates its working branch from the selected base branch and opens its pull request against it."),
+            opt("c", "Change the repository's default branch to `release/2.4` until the agent finishes.", "Incorrect. It would work by side effect but disrupts everyone else; base-branch selection exists for this."),
+            opt("d", "Tell the agent in the issue text to commit directly to `release/2.4`.", "Incorrect. The agent works on its own branch and through a pull request, never directly on the target branch.")],
+   answer=["b"], explanation="Branch-based scope comes from the execution context: you choose the base branch, the agent branches from it and targets it with a pull request.",
+   takeaway="Different base → choose it when delegating. The agent file can't set it.", sources=[L4, CLI]),
+ Q("m3-u4-agent-file", "M3-U4-C3", "statements", "understand",
+   stem="You are creating `.github/agents/security-reviewer.agent.md`.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.",
+   items=[{"id": "a", "statement": "The agent file can limit which tools the agent is able to use.", "answer": "yes", "explanation": "The `tools` property defines what the agent can do, and the platform enforces it."},
+          {"id": "b", "statement": "The agent file can define which branch the agent's pull request targets.", "answer": "no", "explanation": "Branch creation and pull request behaviour are decided by the system that runs the agent."},
+          {"id": "c", "statement": "If the agent file has no `tools` property, the agent has no tools.", "answer": "no", "explanation": "Omitting `tools` gives the agent all available tools."}],
+   takeaway="Agent file = tools + behaviour. Branch, PR and isolation = execution context.", sources=[L4, AGCFG]),
+ Q("m3-u4-least-priv", "M3-U4-C5", "single", "apply",
+   stem="A scheduled workflow runs an agent every night. The agent reads the repository's recent commits and posts a summary as a comment on a tracking issue. The repository's default workflow permissions are set to read and write.\n\nYou need to follow least privilege. Which configuration should you use for the job?",
+   options=[opt("a", "No `permissions:` key, so the job uses the repository default.", "Incorrect. The default here is read and write for every scope."),
+            opt("b", "`permissions: write-all`", "Incorrect. It grants every scope at write level."),
+            opt("c", "`permissions: { contents: write, issues: write }`", "Incorrect. The job only reads code, so `contents: write` is more than it needs."),
+            opt("d", "`permissions: { contents: read, issues: write }`", "Correct. It can read the repository and comment on an issue; every other scope becomes `none`.")],
+   answer=["d"], explanation="Permissions should be explicit and minimal. Declaring scopes sets all undeclared ones to `none`.",
+   takeaway="Declare only the scopes the job uses; undeclared scopes become none.", sources=[L4, WFS]),
+ Q("m3-u4-defence", "M3-U4-C6", "multiple", "understand", select=3,
+   stem="You are explaining to a security reviewer why GitHub Agentic Workflows are resistant to prompt injection.\n\nWhich three guardrails are part of their design? Each correct answer presents part of the solution.",
+   options=[opt("a", "The agent runs with read-only tokens by default.", "Correct. The agent can inspect the repository but not change it directly."),
+            opt("b", "Safe outputs: the agent proposes actions and a separate gated step decides what is applied.", "Correct. Writes happen only through declared, validated outputs."),
+            opt("c", "The agent's process holds the repository's deployment secrets so it can roll back its own changes.", "Incorrect. The design keeps secrets out of the agent process."),
+            opt("d", "Outbound network access is isolated and limited to an allowlist.", "Correct. Network isolation limits where data can be sent."),
+            opt("e", "The agent's instructions are encrypted so that issue text can't override them.", "Incorrect. That isn't one of the guardrails; the design assumes instructions can be attacked and limits what the agent can do.")],
+   answer=["a", "b", "d"], explanation="Defence in depth: read-only tokens, safe outputs, no secrets in the agent process, sandboxing, network isolation and threat detection on proposed outputs.",
+   takeaway="The defence against injection is removing the agent's ability to write, not protecting its prompt.", sources=[L4, GHAW]),
+ Q("m3-u4-which-boundary", "M3-U4-C1", "match", "analyse", reuse=False,
+   stem="Four incidents involve agents. Each was caused by one part of the execution context being wrong.\n\nWhich boundary failed in each incident?",
+   choices=[{"id": "repo", "text": "Repository scope"}, {"id": "branch", "text": "Branch isolation"}, {"id": "wf", "text": "Workflow trigger"}, {"id": "perm", "text": "Token permissions"}],
+   targets=[{"id": "t1", "text": "An agent step in CI published a release, although it was only meant to read code.", "answer": "perm", "rationale": "The job's token allowed writes it didn't need."},
+            {"id": "t2", "text": "An automation's commits landed directly on `main` without a pull request.", "answer": "branch", "rationale": "Changes weren't isolated on a working branch behind a pull request."},
+            {"id": "t3", "text": "An agent task ran on every push to every branch instead of nightly.", "answer": "wf", "rationale": "The workflow's `on:` trigger defined the wrong moment to run."},
+            {"id": "t4", "text": "An automation with an organisation-wide token changed files in a repository it wasn't assigned to.", "answer": "repo", "rationale": "Its credentials reached beyond the repository it should work in."}],
+   explanation="Execution context = repository, branch, workflow and permissions. Each incident maps to one of them.",
+   takeaway="Map the symptom to the boundary: where (repo), on what (branch), when (workflow), how much (permissions).", sources=[L4]),
+ # ---------------- U5
+ Q("m3-u5-other-repo", "M3-U5-C1", "single", "analyse",
+   stem="While working on an issue in `contoso/orders-api`, GitHub Copilot cloud agent determines that the real fix belongs in `contoso/shared-validation`, a library in the same organisation. Its session ends without changing the library.\n\nWhy?",
+   options=[opt("a", "The agent only has access to the repository where it's working.", "Correct. Repository scope is a platform limit of the cloud agent."),
+            opt("b", "The library's default branch is protected by a ruleset.", "Incorrect. A ruleset would block a merge or push to that branch; the agent couldn't reach the repository at all."),
+            opt("c", "The firewall blocks all requests to github.com.", "Incorrect. The agent works with GitHub; the firewall limits other outbound destinations."),
+            opt("d", "The agent needs an Actions secret that contains an organisation-wide token.", "Incorrect. The agent can't read Actions secrets, and a broad token isn't how its scope is meant to be extended.")],
+   answer=["a"], explanation="The cloud agent is scoped to one repository. Cross-repository work is a separate task in the other repository.",
+   takeaway="One session, one repository.", sources=[L5, CLOUD]),
+ Q("m3-u5-continue", "M3-U5-C3", "single", "analyse",
+   stem="A workflow runs an agent step that generates API documentation, followed by a step that commits and pushes the result. Last night the agent step failed half-way, yet the next step still committed incomplete files.\n\nWhat is the most likely cause?",
+   options=[opt("a", "The agent step has `continue-on-error: true`.", "Correct. With it, the job carries on after the step fails, so the commit step ran on partial output."),
+            opt("b", "The workflow has no `concurrency` group.", "Incorrect. Concurrency controls overlapping runs, not whether a job continues after a failed step."),
+            opt("c", "The job's `permissions:` include `contents: write`.", "Incorrect. That lets the commit succeed, but it isn't why the step ran after a failure."),
+            opt("d", "The job has no `timeout-minutes`.", "Incorrect. A timeout limits how long a job runs; it doesn't make later steps run after a failure.")],
+   answer=["a"], explanation="Fail fast: a failed step stops the job by default. `continue-on-error: true` hides the failure and lets partial changes through.",
+   takeaway="Don't put continue-on-error on the agent step when later steps publish its output.", sources=[L5, WFS]),
+ Q("m3-u5-retry", "M3-U5-C4", "single", "evaluate",
+   stem="You are adding automatic retries to a workflow that runs an agent. You want to retry only where a retry can help.\n\nWhich failure should be retried automatically?",
+   options=[opt("a", "The agent's change makes a unit test fail.", "Incorrect. The test will fail again until the code is fixed."),
+            opt("b", "The job's token gets `403 Resource not accessible by integration`.", "Incorrect. A missing permission is permanent until the configuration changes."),
+            opt("c", "A request to an external service times out because of a brief network problem.", "Correct. Transient failures are what retries are for."),
+            opt("d", "The agent's branch has a merge conflict with the base branch.", "Incorrect. A conflict needs to be resolved, by the agent or a person, not retried.")],
+   answer=["c"], explanation="Retries handle temporary failures such as network issues. Permanent failures need a fix or an escalation.",
+   takeaway="Retry transient failures; fix or escalate permanent ones.", sources=[L5]),
+ Q("m3-u5-rollback", "M3-U5-C5", "build", "apply",
+   stem="A pull request from an agent was reviewed and merged. An hour later you discover it broke the default branch, which is protected by a ruleset.\n\nWhich four actions should you perform in sequence to roll back safely and then get a corrected change?",
+   items=[{"id": "revert", "text": "Create a pull request that reverts the merged pull request."},
+          {"id": "checks", "text": "Wait for the required checks to pass on the revert pull request."},
+          {"id": "merge", "text": "Have the revert pull request reviewed and merge it."},
+          {"id": "redo", "text": "Ask the agent for a corrected change in a new pull request."},
+          {"id": "force", "text": "Force-push the default branch back to the commit before the merge."},
+          {"id": "bypass", "text": "Add yourself to the ruleset bypass list to skip the checks."}],
+   answer=["revert", "checks", "merge", "redo"],
+   explanation="A merged change is rolled back by reverting its commits through the normal pull request path. Force-pushing rewrites history and is blocked by the ruleset, and bypassing checks removes the evidence you need.",
+   takeaway="Not merged → close the PR. Merged → revert through a PR, then fix in a new one.", sources=[L5]),
+ Q("m3-u5-safeguards", "M3-U5-C6", "match", "apply", reuse=False,
+   stem="You are documenting the safeguards around an agent-driven workflow.\n\nWhich mechanism addresses each situation?",
+   choices=[{"id": "review", "text": "Required pull request review"}, {"id": "history", "text": "Commit history and pull request discussion"}, {"id": "env", "text": "Environment with required reviewers"}, {"id": "retry", "text": "Retry logic"}, {"id": "revert", "text": "Revert pull request"}],
+   targets=[{"id": "t1", "text": "The agent is unsure whether its change is right, and a person must decide.", "answer": "review", "rationale": "Escalation: required review puts a human in the decision."},
+            {"id": "t2", "text": "An auditor asks who changed a file and why.", "answer": "history", "rationale": "Traceability comes from commits, logs and pull request discussion."},
+            {"id": "t3", "text": "A deployment of agent-generated changes must wait for operations to approve.", "answer": "env", "rationale": "Environments gate deployment jobs and their secrets."},
+            {"id": "t4", "text": "A call to an external API fails once because of a temporary network error.", "answer": "retry", "rationale": "Retries handle transient failures."}],
+   explanation="Resilient, controlled, auditable and human-governed: each safeguard covers a different failure.",
+   takeaway="Escalate with review, trace with history, gate deploys with environments, retry only transient errors.", sources=[L5, ENV]),
+ Q("m3-u5-triggers", "M3-U5-C8", "statements", "analyse",
+   stem="A workflow in `contoso/orders-api` runs on `push`. One of its steps commits generated files and pushes them to the same branch.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.",
+   items=[{"id": "a", "statement": "If the step pushes with `GITHUB_TOKEN`, that push triggers the workflow again.", "answer": "no", "explanation": "Events created with `GITHUB_TOKEN` don't start new workflow runs, which prevents loops."},
+          {"id": "b", "statement": "If the step pushes with a personal access token, that push can trigger the workflow again.", "answer": "yes", "explanation": "Other tokens can trigger further runs, so this design can loop."},
+          {"id": "c", "statement": "A `workflow_dispatch` event sent with `GITHUB_TOKEN` starts a workflow run.", "answer": "yes", "explanation": "`workflow_dispatch` and `repository_dispatch` are the exceptions."}],
+   takeaway="GITHUB_TOKEN: no new runs, except dispatch events. App tokens and PATs can trigger runs, so guard against loops.", sources=[L5, TOKEN]),
+ Q("m3-u5-org-controls", "M3-U5-C2", "single", "apply",
+   stem="An organisation wants to limit what workflows written or changed by agents can do in any repository: they may use only actions created by GitHub or by verified creators, and the workflow token must be read-only unless a workflow asks for more.\n\nWhere should the administrator configure this?",
+   options=[opt("a", "In each repository's CODEOWNERS file.", "Incorrect. CODEOWNERS routes reviews; it doesn't restrict actions or token permissions."),
+            opt("b", "In the cloud agent firewall allowlist.", "Incorrect. The firewall limits the agent's network access during its session."),
+            opt("c", "In the organisation's Actions settings: the allowed-actions policy and the default workflow permissions.", "Correct. These settings control which actions can run and what `GITHUB_TOKEN` is permitted to do by default."),
+            opt("d", "In `.github/copilot-instructions.md` in each repository.", "Incorrect. Instructions guide the agent; they don't enforce anything on workflows.")],
+   answer=["c"], explanation="Repository and organisation settings limit which actions can run and what the workflow token may do.",
+   takeaway="Allowed actions + default token permissions are set in Actions settings, above any workflow file.", sources=[L5, TOKEN]),
+]
+
+bank = {
+  "title": "GH-600 · Module 3 · Tooling, MCP and execution environments",
+  "version": 1,
+  "author": "Claude. Lessons follow the Microsoft Learn module; answers checked against GitHub Docs on 27 November 2026.",
+  "passingScore": 700,
+  "durationMinutes": 45,
+  "domains": {"D2": "Tool use and environment interaction"},
+  "modules": {"M3": {"title": "Tooling, MCP, and Agent Execution Environments", "url": L, "units": {
+      "U2": "How agents interact with GitHub APIs and workflows",
+      "U3": "MCP servers, registries, and allow lists",
+      "U4": "Execution context and boundaries",
+      "U5": "Agent execution limits and protections"}}},
+  "nuggets": nuggets,
+  "conflicts": conflicts,
+  "questions": questions,
+}
+
+ALSO = {"m3-u5-other-repo": ["M3-U4-C2"], "m3-u5-safeguards": ["M3-U5-C7"], "m3-u4-least-priv": ["M3-U4-C7"], "m3-u4-base-branch": ["M3-U2-C2"]}
+for q in questions:
+    if q["id"] in ALSO: q["also"] = ALSO[q["id"]]
+
+if __name__ == "__main__":
+    out, sheet = sys.argv[1], sys.argv[2]
+    ids = {n["id"] for n in nuggets}
+    for q in questions:
+        assert q["nugget"] in ids, q["id"]
+    json.dump(bank, open(out, "w"), indent=2, ensure_ascii=False)
+    # fact sheet
+    L_ = ["# M3 · Tooling, MCP, and Agent Execution Environments: fact sheet", "",
+          "Generated from `banks/m3.json`. Each claim is a lesson in the Exam Room; questions cite the claim they test.", "",
+          "Status: **confirmed** = checked against GitHub Docs · **learn-only** = stated by the Learn module, no Docs page checked.", ""]
+    for u, title in bank["modules"]["M3"]["units"].items():
+        L_ += ["## " + u + " · " + title, "", UNIT_LEARN[u], "", "| Claim | Status | Skill (study guide) | Statement | Questions |", "|---|---|---|---|---|"]
+        for n in [x for x in nuggets if x["unit"] == u]:
+            qs = [q["id"] for q in questions if q["nugget"] == n["id"] or n["id"] in q.get("also", [])]
+            L_.append("| " + n["id"] + " | " + n["status"] + " | " + n["skill"] + " | " + n["title"].replace("|", "/") + " | " + (", ".join(qs) or "—") + " |")
+        L_.append("")
+    L_ += ["## Conflicts between the module and GitHub Docs (no questions built on these)", ""]
+    for c in conflicts:
+        L_.append("- **" + c["unit"] + "** · Module: " + c["learnSays"] + " · Docs: " + c["docsSay"] + " (" + c["source"] + ")")
+    open(sheet, "w").write("\n".join(L_) + "\n")
+    from collections import Counter
+    print(len(nuggets), "lessons,", len(questions), "questions;", Counter(q["type"] for q in questions))
+    print("lessons without question:", [n["id"] for n in nuggets if not any(q["nugget"] == n["id"] or n["id"] in q.get("also", []) for q in questions)])
+    print("correct letters (single):", Counter(q["answer"][0] for q in questions if q["type"] == "single"))

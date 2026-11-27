@@ -146,6 +146,17 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .learnbar { display: flex; gap: 10px; flex-wrap: wrap; }
 .why-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 0.92rem; }
 .md-h { margin: 6px 0 0; font-size: 1rem; }
+.lesson-nav { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.lesson-nav select { max-width: 100%; flex: 1 1 220px; min-width: 0; }
+.lesson h2 { font-size: 1.35rem; }
+.lesson .box { border-radius: var(--radius); padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+.lesson .box.example { background: var(--soft); border: 1px solid var(--line); }
+.lesson .box.watch { background: var(--warn-soft); border-left: 4px solid var(--warn); }
+.lesson .box.depth { background: var(--accent-soft); border-left: 4px solid var(--accent); }
+.dots { display: flex; flex-wrap: wrap; gap: 5px; }
+.dots button { width: 26px; height: 26px; padding: 0; border-radius: 50%; font-size: 0.72rem; font-family: var(--font-mono); background: var(--paper); color: var(--muted); border: 1px solid var(--line); }
+.dots button.seen { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+.dots button.current { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .stmt-table { width: 100%; border-collapse: collapse; }
 .stmt-table th { text-align: center; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 6px; border-bottom: 1px solid var(--line); }
 .stmt-table th:first-child { text-align: left; }
@@ -358,9 +369,22 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
   // ---------- state ----------
   let bank = null, bankSource = "", bankErrors = [], catalog = [];
   let session = null;   // {cfg, units, answers, flags, locked, revealed, idx, startedAt, endsAt, finished, results}
-  let view = "start";   // start | question | review | results
+  let view = "start";   // start | question | review | results | learn
+  let lesson = { unit: "", idx: 0 };
+  const SEEN_KEY = "gh600-exam-lessons-seen-v1";
+  let seen = storeGet(SEEN_KEY) || {};
+  const nuggets = () => (bank && Array.isArray(bank.nuggets) ? bank.nuggets : []);
+  const unitKey = (x) => (x.module || "") + "-" + (x.unit || "");
+  function unitList() {
+    const out = [], have = new Set();
+    const add = (m, u) => { const k = m + "-" + u; if (!m || !u || have.has(k)) return; have.add(k); const mod = (bank.modules || {})[m] || {}; out.push({ key: k, module: m, unit: u, label: m + " · " + u + " · " + ((mod.units || {})[u] || "") }); };
+    nuggets().forEach((n) => add(n.module, n.unit));
+    (bank ? bank.questions : []).forEach((q) => add(q.module, q.unit));
+    return out.sort((a, b) => a.key.localeCompare(b.key, undefined, { numeric: true }));
+  }
+  const questionsFor = (nid) => (bank ? bank.questions.filter((q) => q.nugget === nid || (q.also || []).includes(nid) || (q.type === "case" && q.questions.some((x) => x.nugget === nid))) : []);
   let timerHandle = null, db = null, dl = null, attempts = [], dbState = "pending";
-  const defaultCfg = () => ({ mode: "exam", count: 0, domains: [], minutes: 0, shuffleQ: true, shuffleOpts: true });
+  const defaultCfg = () => ({ mode: "exam", count: 0, domains: [], minutes: 0, shuffleQ: true, shuffleOpts: true, unit: "" });
   let cfg = Object.assign(defaultCfg(), storeGet(CONFIG_KEY) || {});
 
   function setBank(b, source) {
@@ -380,6 +404,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
   // ---------- build an exam ----------
   function buildUnits(questions, c) {
     let qs = questions.filter((q) => c.domains.includes(domainOf(q)) || (q.type === "case" && q.questions.some((s) => c.domains.includes(s.domain))));
+    if (c.unit) qs = qs.filter((q) => unitKey(q) === c.unit);
     if (c.shuffleQ) qs = shuffle(qs);
     if (c.count && c.count < qs.length) qs = qs.slice(0, c.count);
     const units = [];
@@ -537,12 +562,13 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     const main = $("main");
     main.replaceChildren();
     $("actionbar").hidden = view !== "question";
-    $("sbTitle").textContent = session && view !== "start" ? session.bankTitle : "GH-600 · Developing in Agentic AI Systems";
-    $("sbCount").textContent = session && view === "question" ? "Question " + (session.idx + 1) + " of " + session.live.length : session && view === "review" ? "Review" : "";
+    $("sbTitle").textContent = session && view !== "start" && view !== "learn" ? session.bankTitle : view === "learn" && bank ? (bank.title || "Lessons") : "GH-600 · Developing in Agentic AI Systems";
+    $("sbCount").textContent = session && view === "question" ? "Question " + (session.idx + 1) + " of " + session.live.length : session && view === "review" ? "Review" : view === "learn" ? "Lessons" : "";
     if (view === "start") return renderStart();
     if (view === "question") return renderQuestion();
     if (view === "review") return renderReview();
     if (view === "results") return renderResults();
+    if (view === "learn") return renderLearn();
   }
 
   function renderStart(message) {
@@ -621,16 +647,19 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     // Settings
     if (bank) {
       const domKeys = Object.keys(bank.domains || {}).length ? Object.keys(bank.domains) : [...new Set(bank.questions.map(domainOf))];
-      const form = h("form", { class: "panel", id: "cfgForm", "aria-labelledby": "cfgH", onsubmit: (e) => { e.preventDefault(); readCfg(); storeSet(CONFIG_KEY, cfg); startExam(cfg); } });
+      const form = h("form", { class: "panel", id: "cfgForm", "aria-labelledby": "cfgH", onsubmit: (e) => { e.preventDefault(); readCfg(); storeSet(CONFIG_KEY, cfg);
+        if (cfg.mode === "learn") { if (!nuggets().length) { renderStart("This bank has no lessons. Choose a bank with lessons, such as the module banks, or use Practice."); return; } openLearn(cfg.unit, 0); return; }
+        startExam(cfg); } });
       const modeSeg = h("div", { class: "segmented", role: "radiogroup", "aria-label": "Mode" },
         ["exam", "practice", "learn"].map((m) => h("label", null, h("input", { type: "radio", name: "mode", id: "mode-" + m, value: m, checked: cfg.mode === m }), { exam: "Exam", practice: "Practice", learn: "Learn" }[m])));
       form.append(
         h("h2", { id: "cfgH" }, "Settings"),
         h("div", { class: "grid2" },
-          h("div", { class: "field" }, h("span", null, "Mode"), modeSeg, h("p", { class: "small muted" }, "Exam: timed, locked sections, answers at the end. Practice: check each answer with Check, or when you press Next; you can change it until then. Learn: the same, plus why each option is right or wrong and Try again.")),
+          h("div", { class: "field" }, h("span", null, "Mode"), modeSeg, h("p", { class: "small muted" }, "Exam: timed, locked sections, answers at the end. Practice: the same questions, but each answer is marked and explained as soon as you check it or press Next. Learn: short lessons from the Learn modules, each with questions to test it.")),
           h("div", { class: "field" }, h("span", null, "Number of questions"), h("input", { type: "number", id: "cfgCount", min: "1", max: String(bank.questions.length), value: String(Math.min(cfg.count || bank.questions.length, bank.questions.length)) }), h("p", { class: "small muted" }, "Out of " + bank.questions.length + ". A Yes/No series or case study counts as one question but holds several scored items.")),
           h("div", { class: "field" }, h("span", null, "Time limit (minutes, exam mode)"), h("input", { type: "number", id: "cfgMinutes", min: "1", max: "300", value: String(cfg.minutes || 45) }), h("p", { class: "small muted" }, "The real GH-600 allows 120 minutes for about 40–60 questions."))
         ),
+        unitList().length ? h("div", { class: "field" }, h("label", { for: "cfgUnit", style: "font-size:0.88rem;font-weight:600" }, "Module and unit"), h("select", { id: "cfgUnit" }, h("option", { value: "", text: "All units" }), unitList().map((x) => h("option", { value: x.key, text: x.label, selected: cfg.unit === x.key })))) : null,
         h("div", { class: "field" }, h("span", null, "Domains"), h("div", { class: "checks" },
           domKeys.map((d) => h("label", { class: "check-inline" }, h("input", { type: "checkbox", name: "dom", value: d, id: "dom-" + d, checked: cfg.domains.includes(d) }), h("span", { class: "mono", text: d }), h("span", { class: "muted", text: domainName(d) }))))),
         h("div", { class: "checks" },
@@ -668,7 +697,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     main.append(h("section", { class: "panel" },
       h("details", { class: "help" },
         h("summary", null, "Question file format"),
-        h("div", { class: "prose", style: "margin-top:10px", html: md("A bank is one JSON object with `title`, optional `passingScore` (default 700), `durationMinutes`, `domains` (code → name) and a `questions` array. Every question has a unique `id`, a `type` and a `domain`. Text fields accept a little Markdown: `**bold**`, `` `code` ``, blank lines for paragraphs, and lines starting with `- ` for lists. Each question can carry an `explanation` and a `sources` array of URLs.\n\n- `single`: `stem`, `options` [{id, text}], `answer` [one id]\n- `multiple`: as single, plus `select` (how many to choose); `answer` lists every correct id. Scored with partial credit.\n- `yesno`: a shared `scenario` and `items` [{id, statement, answer: \"yes\"|\"no\", explanation}]. Each item is scored and locks once you leave it.\n- `yesno` items can use `solution` instead of `statement` for problem-solution sets (\"Does this meet the goal?\"; set `goal` on the question to change the wording).\n- `statements`: `stem` and `items` [{id, statement, answer, explanation}] shown together as a Yes/No grid on one screen. Partial credit per statement.\n- `order`: `stem`, `items` [{id, text}], `answer` [ids in the right order]. Shown shuffled.\n- `build` (build list): `stem`, a pool of `items` [{id, text}] that includes distractors, and `answer` [the ids to pick, in order].\n- `match` (drag and drop): `stem`, `choices` [{id, text}], `targets` [{id, text, answer, rationale}], and `reuse` (false if each value can be used only once).\n- `dropdown`: `stem`, a `template` with `[[name]]` markers, and `blanks` {name: {options, answer}}.\n- `case`: `title`, a long `scenario` (use `### Heading` lines for sections such as Overview or Requirements), and `questions` of any type except yesno and case. The whole case locks once you leave it.") }),
+        h("div", { class: "prose", style: "margin-top:10px", html: md("A bank is one JSON object with `title`, optional `passingScore` (default 700), `durationMinutes`, `domains` (code → name) and a `questions` array. Every question has a unique `id`, a `type` and a `domain`. Text fields accept a little Markdown: `**bold**`, `` `code` ``, blank lines for paragraphs, and lines starting with `- ` for lists. Each question can carry an `explanation` and a `sources` array of URLs. For lessons, add `modules` {M3: {title, units: {U2: title}}}, a `nuggets` array [{id, module, unit, domain, status, title, body, example, depth, watch, learn, sources}] and, on each question, `module`, `unit` and `nugget` (the lesson id it tests).\n\n- `single`: `stem`, `options` [{id, text}], `answer` [one id]\n- `multiple`: as single, plus `select` (how many to choose); `answer` lists every correct id. Scored with partial credit.\n- `yesno`: a shared `scenario` and `items` [{id, statement, answer: \"yes\"|\"no\", explanation}]. Each item is scored and locks once you leave it.\n- `yesno` items can use `solution` instead of `statement` for problem-solution sets (\"Does this meet the goal?\"; set `goal` on the question to change the wording).\n- `statements`: `stem` and `items` [{id, statement, answer, explanation}] shown together as a Yes/No grid on one screen. Partial credit per statement.\n- `order`: `stem`, `items` [{id, text}], `answer` [ids in the right order]. Shown shuffled.\n- `build` (build list): `stem`, a pool of `items` [{id, text}] that includes distractors, and `answer` [the ids to pick, in order].\n- `match` (drag and drop): `stem`, `choices` [{id, text}], `targets` [{id, text, answer, rationale}], and `reuse` (false if each value can be used only once).\n- `dropdown`: `stem`, a `template` with `[[name]]` markers, and `blanks` {name: {options, answer}}.\n- `case`: `title`, a long `scenario` (use `### Heading` lines for sections such as Overview or Requirements), and `questions` of any type except yesno and case. The whole case locks once you leave it.") }),
         h("pre", { class: "example", text: JSON.stringify({ title: "My bank", passingScore: 700, durationMinutes: 30, domains: { D2: "Tool use and environment interaction" }, questions: [{ id: "q1", type: "single", domain: "D2", stem: "Which job name does Copilot run before the cloud agent starts?", options: [{ id: "a", text: "`setup`" }, { id: "b", text: "`copilot-setup-steps`" }], answer: ["b"], explanation: "The job must be named copilot-setup-steps.", sources: ["https://docs.github.com/…"] }] }, null, 2) })
       )
     ));
@@ -679,8 +708,87 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     cfg.count = Math.max(1, parseInt($("cfgCount").value, 10) || bank.questions.length);
     cfg.minutes = Math.max(1, parseInt($("cfgMinutes").value, 10) || 45);
     cfg.domains = [...document.querySelectorAll('input[name="dom"]:checked')].map((x) => x.value);
+    cfg.unit = $("cfgUnit") ? $("cfgUnit").value : "";
     cfg.shuffleQ = $("cfgShuffleQ").checked;
     cfg.shuffleOpts = $("cfgShuffleO").checked;
+  }
+
+  // ---------- rendering: lessons ----------
+  function lessonList() { return nuggets().filter((n) => !lesson.unit || unitKey(n) === lesson.unit); }
+  function openLearn(unit, idx) { lesson = { unit: unit || "", idx: idx || 0 }; session = null; storeSet(SESSION_KEY, null); view = "learn"; clearInterval(timerHandle); $("sbTimer").hidden = true; render(); window.scrollTo(0, 0); }
+  function backToLesson() { const l = session.fromLesson; session = null; storeSet(SESSION_KEY, null); lesson = { unit: l.unit, idx: l.idx }; view = "learn"; clearInterval(timerHandle); $("sbTimer").hidden = true; render(); window.scrollTo(0, 0); }
+  function testNugget(n) {
+    const ids = questionsFor(n.id).map((q) => q.id);
+    if (!ids.length) return;
+    const back = { unit: lesson.unit, idx: lesson.idx };
+    startExam(Object.assign({}, cfg, { mode: "practice", shuffleQ: false, unit: "" }), ids);
+    if (session) { session.fromLesson = back; persist(); render(); }
+  }
+  function nuggetPrompt(n) {
+    const mod = (bank.modules || {})[n.module] || {};
+    return ["Write ONE new GH-600 practice question that tests exactly this learning point, and nothing else.", "",
+      "Learning point (" + n.id + ", " + (mod.title || n.module) + ", unit " + n.unit + "):",
+      "Title: " + plain(n.title), plain(n.body),
+      n.example ? "Example: " + plain(n.example) : "", n.watch ? "Common trap: " + plain(n.watch) : "", n.depth ? "Detail from GitHub Docs: " + plain(n.depth) : "",
+      "Sources: " + [n.learn].concat(n.sources || []).filter(Boolean).join(" , "), "",
+      "Rules:", "- Scenario-based, exam style, with a constraint such as least privilege or \"must not weaken existing controls\".",
+      "- Four options, one correct. Every distractor must be plausible and wrong for a specific reason.",
+      "- Verify the correct answer against the sources before you show it. If you can't verify it, say so.",
+      "- Don't reveal the answer until I reply. Then mark my answer and explain why each option is right or wrong.",
+      "- Avoid making B the correct answer by habit."].filter((x) => x !== "").join("\n");
+  }
+  function renderLearn() {
+    const main = $("main");
+    const all = nuggets();
+    if (!all.length) { view = "start"; return renderStart("This bank has no lessons."); }
+    const list = lessonList();
+    if (lesson.idx >= list.length) lesson.idx = 0;
+    const n = list[lesson.idx];
+    if (!seen[n.id]) { seen[n.id] = 1; storeSet(SEEN_KEY, seen); }
+    const units = unitList().filter((x) => all.some((k) => unitKey(k) === x.key));
+    const mod = (bank.modules || {})[n.module] || {};
+    const qn = questionsFor(n.id).length;
+    const goto = (i) => { lesson.idx = i; render(); window.scrollTo(0, 0); };
+
+    main.append(h("section", { class: "panel" },
+      h("div", { class: "lesson-nav" },
+        h("button", { type: "button", class: "quiet", onclick: () => { view = "start"; render(); } }, "‹ Start"),
+        h("select", { id: "lessonUnit", "aria-label": "Module and unit", onchange: (e) => { lesson = { unit: e.target.value, idx: 0 }; render(); } },
+          h("option", { value: "", text: "All units (" + all.length + " lessons)" }),
+          units.map((x) => h("option", { value: x.key, text: x.label, selected: lesson.unit === x.key })))),
+      h("div", { class: "dots", role: "list", "aria-label": "Lessons" }, list.map((k, i) => h("button", { type: "button", class: (i === lesson.idx ? "current" : seen[k.id] ? "seen" : ""), "aria-label": "Lesson " + (i + 1) + ": " + plain(k.title), onclick: () => goto(i) }, String(i + 1))))));
+
+    const card = h("article", { class: "panel lesson" },
+      h("div", { class: "qhead" },
+        h("span", { class: "label", text: n.module + " · " + n.unit + " · " + ((mod.units || {})[n.unit] || "") }),
+        h("span", { class: "pill " + (n.status === "confirmed" ? "ok" : "idle"), text: n.status === "confirmed" ? "Confirmed in GitHub Docs" : "From the Learn module" })),
+      h("h2", { html: inline(n.title) }),
+      prose(n.body),
+      n.example ? h("div", { class: "box example" }, h("div", { class: "label" }, "Example"), prose(n.example)) : null,
+      n.depth ? h("div", { class: "box depth" }, h("div", { class: "label" }, "What GitHub Docs adds"), prose(n.depth)) : null,
+      n.watch ? h("div", { class: "box watch" }, h("div", { class: "label" }, "Exam trap"), prose(n.watch)) : null,
+      h("div", { class: "sources" }, h("span", { class: "label" }, "Sources"),
+        [n.learn].concat(n.sources || []).filter(Boolean).map((u) => h("a", { href: u, target: "_blank", rel: "noopener", text: u }))),
+      h("div", { class: "row" },
+        h("button", { type: "button", disabled: !qn, onclick: () => testNugget(n) }, qn ? "Test me on this (" + qn + (qn === 1 ? " question)" : " questions)") : "No question yet"),
+        h("button", { type: "button", class: "secondary", onclick: () => {
+          const text = nuggetPrompt(n), msg = $("lessonMsg");
+          const done = () => { msg.textContent = "Copied. Paste it into a Claude chat to get a brand-new question on this point."; };
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, msg)); else fallbackCopy(text, msg);
+        } }, "Copy prompt for a new question")),
+      h("p", { id: "lessonMsg", class: "small muted", role: "status" }),
+      h("div", { class: "row" },
+        h("button", { type: "button", class: "quiet", disabled: lesson.idx === 0, onclick: () => goto(lesson.idx - 1) }, "‹ Previous"),
+        h("span", { class: "small muted mono", text: (lesson.idx + 1) + " / " + list.length + " · " + n.id }),
+        h("span", { style: "flex:1" }),
+        h("button", { type: "button", class: lesson.idx === list.length - 1 ? "quiet" : "", disabled: lesson.idx === list.length - 1, onclick: () => goto(lesson.idx + 1) }, "Next lesson ›")));
+    main.append(card);
+
+    const conflicts = (bank.conflicts || []).filter((c) => !lesson.unit || (c.module + "-" + c.unit) === lesson.unit);
+    if (conflicts.length) main.append(h("section", { class: "panel" },
+      h("details", { class: "help" }, h("summary", null, "Where the Learn module and GitHub Docs disagree (" + conflicts.length + ")"),
+        h("p", { class: "small muted", style: "margin-top:8px" }, "No question is built on these points. Know both versions in case the exam follows the module."),
+        h("ul", { class: "why-list", style: "margin-top:8px" }, conflicts.map((c) => h("li", null, h("strong", { text: c.module + " " + c.unit + ". " }), h("span", { html: "The module says: " + inline(c.learnSays) + " GitHub Docs say: " + inline(c.docsSay) }))))))) ;
   }
 
   // ---------- rendering: question ----------
@@ -872,16 +980,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       if (revealed) panel.append(h("ul", { class: "why-list" }, Object.entries(u.q.blanks).map(([k, b]) => h("li", null, h("strong", { text: k + " = " + b.answer + ". " }), b.rationale ? h("span", { html: inline(b.rationale) }) : null))));
     }
 
-    if (mode === "learn") {
-      const bar = h("div", { class: "learnbar" });
-      if (!revealed) {
-        bar.append(h("span", { class: "small muted", text: "Press Check, or Next, to see whether you're right." }),
-          h("button", { type: "button", class: "quiet", onclick: () => reveal(u) }, "Show answer"));
-      } else {
-        bar.append(h("button", { type: "button", class: "secondary", onclick: () => { delete session.answers[u.key]; delete session.revealed[u.key]; persist(); render(); } }, "Try again"));
-      }
-      panel.append(bar);
-    }
+    if (session.fromLesson) panel.append(h("div", null, h("button", { type: "button", class: "quiet", onclick: backToLesson }, "‹ Back to the lesson")));
     if (revealed) panel.append(feedbackBox(u, false));
     main.append(panel);
     updateBar();
@@ -921,7 +1020,9 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     $("btnFlag").setAttribute("aria-pressed", session.flags[u.key] ? "true" : "false");
     $("btnFlag").textContent = session.flags[u.key] ? "Marked for review" : "Mark for review";
     const pendingCheck = !exam && isAnswered(u) && !session.revealed[u.key];
-    $("btnNext").textContent = pendingCheck ? "Next: check answer ›" : (session.idx === session.live.length - 1 ? "Review ›" : "Next ›");
+    const last = session.idx === session.live.length - 1;
+    $("btnNext").textContent = pendingCheck ? "Next: check answer ›" : (last ? (session.fromLesson ? "Back to the lesson ›" : "Review ›") : "Next ›");
+    $("btnReview").hidden = !!session.fromLesson;
     $("btnCheck").hidden = exam || !!session.revealed[u.key];
     $("btnCheck").disabled = !isAnswered(u);
     $("sbCount").textContent = "Question " + (session.idx + 1) + " of " + session.live.length;
@@ -969,7 +1070,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       h("div", { class: "score" },
         h("div", null, h("div", { class: "label" }, "Score"), h("div", { class: "big", text: String(r.score) }), h("div", { class: "small muted", text: "of 1000 · pass mark " + r.passing })),
         h("span", { class: "pill " + (pass ? "ok" : "bad"), style: "font-size:1rem;padding:4px 14px", text: pass ? "Pass" : "Fail" }),
-        h("div", { class: "small muted", style: "max-width:46ch" }, (Math.round(r.pts * 10) / 10) + " of " + r.total + " items correct (" + Math.round(r.pct * 100) + " %), partial credit included" + (session.cfg.mode === "learn" ? ", scored on your first check of each question" : "") + ". Time used " + fmtTime((session.finishedAt || Date.now()) - session.startedAt) + ". The real exam uses a scaled score, so treat this as an estimate.")),
+        h("div", { class: "small muted", style: "max-width:46ch" }, (Math.round(r.pts * 10) / 10) + " of " + r.total + " items correct (" + Math.round(r.pct * 100) + " %), partial credit included. Time used " + fmtTime((session.finishedAt || Date.now()) - session.startedAt) + ". The real exam uses a scaled score, so treat this as an estimate.")),
       h("div", { class: "bar", "aria-hidden": "true" }, h("span", { style: "width:" + Math.round(r.pct * 100) + "%" }), h("span", { class: "mark", style: "left:" + (r.passing / 10) + "%" })),
       h("div", { class: "label", style: "margin-top:6px" }, "By domain"),
       h("div", { style: "display:flex;flex-direction:column;gap:8px" }, Object.entries(r.byDomain).sort().map(([d, v]) => {
@@ -1158,7 +1259,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
   $("btnNext").addEventListener("click", () => {
     const u = cur();
     if (session.cfg.mode !== "exam" && isAnswered(u) && !session.revealed[u.key]) { reveal(u); return; }   // first Next shows the result
-    if (session.idx === session.live.length - 1) openReview(); else go(session.idx + 1);
+    if (session.idx === session.live.length - 1) { if (session.fromLesson) backToLesson(); else openReview(); } else go(session.idx + 1);
   });
   $("btnReview").addEventListener("click", openReview);
   $("btnFlag").addEventListener("click", () => { const u = cur(); session.flags[u.key] = !session.flags[u.key]; if (!session.flags[u.key]) delete session.flags[u.key]; persist(); updateBar(); });

@@ -5,7 +5,9 @@ Original practice questions, checked against the GH-600 study guide and GitHub D
 
 - `index.html`: the simulator (Exam, Practice and Learn modes). Works offline too.
 - `questions.json`: the bank loaded by default.
-- `banks/`: more banks; `banks/index.json` lists them in the app.
+- `banks/`: more banks; `banks/index.json` lists them in the app. Module banks (`m3.json`…) also contain lessons for Learn mode.
+- `QUESTION-WRITING.md`: how lessons and questions are written. `SOURCES.md`: the source inventory. `sources/`: one fact sheet per module.
+- `tools/`: build scripts for module banks.
 
 ## Add a bank
 1. Add `banks/<name>.json` (format: see "Question file format" at the bottom of the app).
