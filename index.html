@@ -67,6 +67,9 @@ p { margin: 0; }
 .statusbar .exam { font-weight: 700; letter-spacing: 0.01em; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .statusbar .meta { display: flex; gap: 14px; align-items: center; font-size: 0.92rem; }
 .timer { font-family: var(--font-mono); font-variant-numeric: tabular-nums; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 4px; padding: 2px 8px; }
+.pause-btn { background: transparent; color: var(--bar-ink); border: 1px solid rgba(255,255,255,0.3); padding: 2px 10px; font-size: 0.85rem; font-weight: 600; }
+.pause-btn[aria-pressed="true"] { background: var(--flag); border-color: var(--flag); color: #fff; }
+.timer.paused { opacity: 0.7; }
 .timer.low { background: var(--bad); border-color: var(--bad); color: #fff; }
 
 /* Page column */
@@ -239,6 +242,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     <div class="meta">
       <span id="sbCount" class="mono"></span>
       <span id="sbTimer" class="timer" hidden></span>
+      <button type="button" id="btnPause" class="pause-btn" aria-pressed="false" hidden>Pause</button>
     </div>
   </div>
 </header>
@@ -517,8 +521,20 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       if (!to || !to.section || to.section.id !== u.section.id) session.live.forEach((x) => { if (x.section && x.section.id === u.section.id) session.locked[x.key] = true; });
     }
   }
+  function togglePause() {
+    if (!session || session.finished) return;
+    if (session.pausedAt) {
+      const gap = Date.now() - session.pausedAt;
+      session.startedAt += gap; if (session.endsAt) session.endsAt += gap;
+      session.pausedMs = (session.pausedMs || 0) + gap; session.pauses = (session.pauses || 0) + 1;
+      session.pausedAt = null; session.enteredAt = null;
+    } else {
+      trackTime(); session.enteredAt = null; session.pausedAt = Date.now();
+    }
+    persist(); render(); startTimer();
+  }
   function trackTime() {
-    if (!session || view !== "question") return;
+    if (!session || view !== "question" || session.pausedAt) return;
     const k = session.live[session.idx].key, now = Date.now();
     session.time = session.time || {};
     if (session.enteredAt) session.time[k] = (session.time[k] || 0) + (now - session.enteredAt);
@@ -537,8 +553,15 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     clearInterval(timerHandle);
     const tick = () => {
       const t = $("sbTimer");
-      if (!session || session.finished || view === "start" || view === "results") { t.hidden = true; return; }
-      t.hidden = false;
+      const pb = $("btnPause");
+      if (!session || session.finished || view === "start" || view === "results" || view === "learn") { t.hidden = true; pb.hidden = true; return; }
+      t.hidden = false; pb.hidden = false;
+      pb.textContent = session.pausedAt ? "Resume" : "Pause"; pb.setAttribute("aria-pressed", session.pausedAt ? "true" : "false");
+      t.classList.toggle("paused", !!session.pausedAt);
+      if (session.pausedAt) {
+        t.textContent = session.endsAt ? "Paused · " + fmtTime(session.endsAt - session.pausedAt) + " left" : "Paused · " + fmtTime(session.pausedAt - session.startedAt);
+        return;
+      }
       if (session.endsAt) {
         const left = session.endsAt - Date.now();
         t.textContent = "Time remaining " + fmtTime(left);
@@ -567,7 +590,15 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
   function render() {
     const main = $("main");
     main.replaceChildren();
-    $("actionbar").hidden = view !== "question";
+    $("actionbar").hidden = view !== "question" || !!(session && session.pausedAt);
+    if (session && session.pausedAt && (view === "question" || view === "review")) {
+      $("sbCount").textContent = "Paused";
+      main.append(h("section", { class: "panel" },
+        h("h2", null, "Exam paused"),
+        h("p", { class: "muted" }, "The timer is stopped and the questions are hidden. Your answers are saved."),
+        h("div", { class: "row" }, h("button", { type: "button", onclick: togglePause }, "Resume"))));
+      return;
+    }
     $("sbTitle").textContent = session && view !== "start" && view !== "learn" ? session.bankTitle : view === "learn" && bank ? (bank.title || "Lessons") : "GH-600 · Developing in Agentic AI Systems";
     $("sbCount").textContent = session && view === "question" ? "Question " + (session.idx + 1) + " of " + session.live.length : session && view === "review" ? "Review" : view === "learn" ? "Lessons" : "";
     if (view === "start") return renderStart();
@@ -1210,7 +1241,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
   }
   function exportAttempt(r) {
     return { format: "gh600-exam-room-attempt/v2", bankTitle: session.bankTitle, mode: session.cfg.mode, startedAt: new Date(session.startedAt).toISOString(), finishedAt: new Date(session.finishedAt).toISOString(),
-      durationSeconds: Math.round((session.finishedAt - session.startedAt) / 1000), timeUp: !!session.timeUp,
+      durationSeconds: Math.round((session.finishedAt - session.startedAt) / 1000), timeUp: !!session.timeUp, pauses: session.pauses || 0, pausedSeconds: Math.round((session.pausedMs || 0) / 1000),
       score: r.score, passing: r.passing, passed: r.score >= r.passing, itemCount: r.total, correct: Math.round(r.pts * 100) / 100,
       byDomain: Object.fromEntries(Object.entries(r.byDomain).map(([d, v]) => [d, { name: domainName(d), percent: Math.round((v.pts / v.n) * 100), items: v.n }])),
       items: r.per.map((x, i) => itemRecord(x, i + 1)) };
@@ -1219,7 +1250,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     const e = exportAttempt(r);
     const L = [];
     L.push("# GH-600 practice attempt: " + e.bankTitle, "");
-    L.push("- Mode: " + e.mode + " · Finished: " + e.finishedAt.slice(0, 16).replace("T", " ") + " UTC · Time used: " + fmtTime(e.durationSeconds * 1000) + (e.timeUp ? " (time ran out)" : ""));
+    L.push("- Mode: " + e.mode + " · Finished: " + e.finishedAt.slice(0, 16).replace("T", " ") + " UTC · Time used: " + fmtTime(e.durationSeconds * 1000) + (e.timeUp ? " (time ran out)" : "") + (e.pauses ? " · paused " + e.pauses + (e.pauses === 1 ? " time" : " times") + " for " + fmtTime(e.pausedSeconds * 1000) : ""));
     L.push("- Score: " + e.score + " / 1000 (pass mark " + e.passing + ") · " + e.correct + " of " + e.itemCount + " items correct", "");
     L.push("## By domain", "", "| Domain | Name | Score | Items |", "|---|---|---|---|");
     Object.entries(e.byDomain).sort().forEach(([d, v]) => L.push("| " + d + " | " + v.name + " | " + v.percent + " % | " + v.items + " |"));
@@ -1279,6 +1310,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
   }
 
   // ---------- action bar ----------
+  $("btnPause").addEventListener("click", togglePause);
   $("btnPrev").addEventListener("click", () => go(session.idx - 1));
   $("btnNext").addEventListener("click", () => {
     const u = cur();
