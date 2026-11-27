@@ -131,6 +131,11 @@ Nota del study guide: *"Most questions cover features that are GA. The exam may 
 - M3: describe el MCP local vía `localhost`, cuando el transporte local habitual es `stdio`.
 - Las unidades se contradicen sobre quién crea el PR.
 - M3: *"Agents don't execute on your machine"* solo es cierto para el cloud agent y Agentic Workflows, no para el modo agente de VS Code ni Copilot CLI.
+- M4 (u.4): afirma que la `concurrency` a nivel de job solo actúa dentro de un run. Según Docs, `jobs.<job_id>.concurrency` también serializa entre runs. El propio ejemplo *fan-in* del módulo la usa así.
+- M4 (u.4): la tabla dice que el modo local no admite sesiones en paralelo. No verificado en Docs: no preguntar por ello.
+- M6 (u.4): "serializa" los despliegues a producción con `cancel-in-progress: true`, que en realidad cancela el despliegue en curso. Sin esa opción, el nuevo run espera como pendiente.
+- M6 (u.3–4): el JSON del hook `preToolUse`, el workflow que comprueba `github-copilot[bot]` y el comando `copilot agent run … --allow-tool 'read,search'` son ilustrativos. La sintaxis real está en Hooks reference y en la referencia de Copilot CLI.
+- M3 (u.5): "solo accede al repositorio en el que trabaja" vale para las sesiones en Actions; las sesiones en *cloud sandbox* pueden trabajar con varios repositorios.
 
 ---
 
