@@ -7,7 +7,8 @@ Original practice questions, checked against the GH-600 study guide and GitHub D
 - `questions.json`: the bank loaded by default (currently Module 3).
 - `banks/`: more banks; `banks/index.json` lists them in the app. Module banks (`m3.json`…) also contain lessons for Learn mode.
 - `QUESTION-WRITING.md`: how lessons and questions are written. `SOURCES.md`: the source inventory. `sources/`: one fact sheet per module.
-- `tools/`: build scripts for module banks.
+- `banks/exam1.json`: full exam 1, 60 questions in Microsoft exam style across the six domains, with one case study. Take it in Exam mode, once.
+- `tools/`: build scripts for module banks. `tools/exam1/`: the builders of full exam 1 and `verify.py`, its quality gate.
 
 ## Add a bank
 1. Add `banks/<name>.json` (format: see "Question file format" at the bottom of the app).

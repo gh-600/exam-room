@@ -76,3 +76,46 @@ A lesson teaches one claim in under a minute of reading.
 ```
 
 Question types and their fields are described in the app under "Question file format". `tools/build_m3.py` is the worked example of a module build.
+
+## 7. Microsoft exam style
+
+Applies to full exams (`banks/exam<N>.json`) and to every exam-format question. Module banks may stay closer to the wording of the Learn unit.
+
+**What is official and what isn't.** Microsoft doesn't publish items, and it doesn't say which question types a given exam uses ([Exam duration and exam experience](https://learn.microsoft.com/en-us/credentials/support/exam-duration-exam-experience)). Its reference for "style, wording, and difficulty" is the practice assessment, and GH-600 doesn't have one yet. These rules therefore combine three sources of different strength:
+
+- **Documented by Microsoft:** the question types (multiple choice, build list, drag and drop, hot area, case studies), the scoring rules ([Exam scoring and score reports](https://learn.microsoft.com/en-us/credentials/certifications/exam-scoring-reports)) and how problem-solution sets work ([Understanding questions that you can't review](https://learn.microsoft.com/en-us/credentials/certifications/posts/understanding-questions-that-you-cannot-review)).
+- **Recalled, not re-fetched:** the fixed wordings that Microsoft uses in its public practice assessments and sample questions. Check them against the [exam sandbox](https://aka.ms/examdemo) when in doubt.
+- **One first-hand account of the live GH-600 exam** ([blog post, August 2026](https://sameeraman.github.io/blog/2026/08/09/gh600-exam-reflections/)): 52 questions, one case study of 10, multiple choice, drag and drop, drop-downs and code completion, "not a theory exam". A single source, so it calibrates the mix and nothing more.
+
+**Rules**
+
+1. **Language.** US English, second person, present tense. No contractions in anything the candidate reads before answering (feedback text may use them). GitHub UI labels exactly as in the product, in bold.
+2. **Stem.** The situation ("You have a GitHub repository named Repo1 that…"), then what exists or what happened, then the requirement as "You need to…", with a constraint when it rules out a shortcut ("The solution must…", "You must not…"), then one closed question.
+3. **Closing question.** One of: "What should you do?", "What should you do first?", "What should you use / configure / add / include / recommend?", "Which … should you …?", "What is the cause?", "How should you complete the workflow / configuration / job?". Never negative ("NOT", "EXCEPT"). Never "all of the above" or "none of the above".
+4. **Names.** Placeholders such as Repo1, Org1, RS1 and Server1, and Microsoft's fictitious companies (Contoso, Fabrikam, Litware, Adatum, Northwind Traders). No real people or companies.
+5. **Self-contained and fair.** Everything needed is in the stem, and nothing is a trick. A solution that is only a first step, or that meets part of the goal, is wrong.
+6. **Options.** Four for a single answer. Grammatically parallel, all sentences or all fragments, of similar length: the key is never the longest by a wide margin. Each distractor is plausible to someone who lacks the skill. Code and settings use exact product syntax.
+7. **Wording per type**
+
+   | Type | Wording |
+   |---|---|
+   | Several answers (`multiple`) | "Which two actions should you perform? Each correct answer presents part of the solution." (or "…a complete solution." when each answer works alone), then "NOTE: Each correct selection is worth one point." |
+   | Problem-solution series (`yesno`) | A shared scenario that ends with "You need to…". Each screen shows "Solution: …" and "Does this meet the goal?". Three screens. In Exam mode the app shows Microsoft's series note and locks each screen. |
+   | Statements (`statements`) | "For each of the following statements, select Yes if the statement is true. Otherwise, select No." and the NOTE. Three independent statements. Vary the Yes/No pattern from one question to the next. |
+   | Build list (`build`) | "Which four actions should you perform in sequence?" The app adds "Move the appropriate actions…". Include one or two actions that don't belong. Exactly one valid order. |
+   | Drag and drop (`match`) | "Which X should you use for each Y?" The app adds "Each value may be used once, more than once, or not at all." and the NOTE. |
+   | Drop-down and code completion (`dropdown`) | "How should you complete the workflow?" The app adds "To answer, select the appropriate options in the answer area." and the NOTE. Two to four boxes, options in alphabetical order. |
+   | Case study (`case`) | Sections: Overview, Existing environment, Planned changes, Problem statements, Technical requirements. Each question starts with "You need to…" and can be answered from the case plus the skill. Eight to ten questions. |
+
+8. **Scoring.** One point for each correctly answered component, and no penalty for guessing. The app scores the same way.
+9. **Practical weight.** About a third of the screens or more should show YAML, JSON, a command or a log, in the stem or in the options.
+
+## 8. Full exams
+
+- **Blueprint.** 60 screens, counted as the exam counts them: each item of a series and each case study question is one screen. The domain split stays inside the ranges of the study guide (exam 1: D1 11, D2 13, D3 7, D4 10, D5 10, D6 9). About half the screens are single answer and the rest are spread over the other formats, with one case study and two series. At most 20 % recall.
+- **New questions only.** Nothing is copied from a module bank, a knowledge check or a third-party test.
+- **Evidence.** A Learn excerpt is always verbatim (`quote`). A Docs excerpt is verbatim when the sentence has no template variables; otherwise it is a summary (`note`).
+- **Builders.** `tools/exam1/` holds one file per domain (`d1.py` to `d6.py`), `case.py`, `lib.py` (source catalogue) and `build.py`.
+- **Quality gate.** `tools/exam1/verify.py` must end with no errors before a bank is published. It checks the structure of every question, the 60 screens and the domain weights, the spread of correct letters and of Yes/No answers, that every `quote` is found verbatim in the saved Learn unit or in the GitHub Docs source *and on the page that is cited*, that every Docs link resolves to a page, and the style rules of section 7. It needs a local copy of the Learn unit texts, which isn't kept in this repository because it is Microsoft's content, and a clone of `github/docs`.
+- **After the gate.** Load the bank in the app and answer every screen with the key (the score must be 1000). Then read every screen once more as a candidate would. That last pass is done by the author, so say that it isn't independent when the exam is announced.
+- **Facts that changed.** When GitHub Docs and an older note disagree, the Docs of the day win, and the fact bank in `SOURCES.md` is corrected in the same commit.

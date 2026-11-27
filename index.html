@@ -133,6 +133,8 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .order-item .pos { font-family: var(--font-mono); font-weight: 600; color: var(--muted); text-align: center; }
 .order-item .moves { display: flex; gap: 6px; }
 .order-item button { padding: 4px 10px; }
+.prose pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.86rem; line-height: 1.5; white-space: pre; margin: 0 0 12px; }
+.prose pre.code code { background: none; padding: 0; border: 0; font-size: inherit; }
 .hot { background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.86rem; line-height: 1.9; white-space: pre; margin: 0; }
 .hot select { font-family: var(--font-mono); font-size: 0.86rem; padding: 1px 4px; border-color: var(--accent); }
 .hot select.correct { border-color: var(--ok); background: var(--ok-soft); }
@@ -285,7 +287,11 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   }
   function md(text) {
-    const blocks = String(text ?? "").trim().split(/\n\s*\n/);
+    const src = String(text ?? "").trim();
+    // fenced code blocks (```lang ... ```) are kept verbatim, blank lines included
+    const fenced = src.split(/```[a-z]*\n([\s\S]*?)\n?```/);
+    if (fenced.length > 1) return fenced.map((p, i) => (i % 2 ? "<pre class=\"code\"><code>" + esc(p) + "</code></pre>" : (p.trim() ? md(p) : ""))).join("");
+    const blocks = src.split(/\n\s*\n/);
     return blocks.map((b) => {
       const lines = b.split("\n");
       if (/^#{2,4}\s+/.test(lines[0])) { const head = "<h4 class=\"md-h\">" + inline(lines[0].replace(/^#{2,4}\s+/, "")) + "</h4>"; const rest = lines.slice(1).join("\n"); return head + (rest.trim() ? md(rest) : ""); }
@@ -403,9 +409,11 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     const errs = validateBank(b);
     bankErrors = errs;
     if (errs.length) return false;
+    const changed = !!bank && bankSource !== source;   // switching banks must not carry the previous bank's filters over
     bank = b; bankSource = source;
     const domains = Object.keys(bank.domains || {}).length ? Object.keys(bank.domains) : [...new Set(bank.questions.map(domainOf))];
-    if (!cfg.domains.length || !cfg.domains.some((d) => domains.includes(d))) cfg.domains = domains.slice();
+    if (changed || !cfg.domains.length || !cfg.domains.every((d) => domains.includes(d))) cfg.domains = domains.slice();
+    if (changed) { cfg.unit = ""; cfg.types = "all"; }
     cfg.count = bank.questions.length;
     cfg.minutes = bank.durationMinutes || Math.max(10, Math.round(totalUnits(bank.questions) * 2));
     return true;
@@ -696,7 +704,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
         h("h2", { id: "cfgH" }, "Settings"),
         h("div", { class: "grid2" },
           h("div", { class: "field" }, h("span", null, "Mode"), modeSeg, h("p", { class: "small muted" }, "Exam: timed, locked sections, answers at the end. Practice: the same questions, but each answer is marked and explained as soon as you check it or press Next. Learn: short lessons from the Learn modules, each with questions to test it.")),
-          h("div", { class: "field" }, h("span", null, "Number of questions"), h("input", { type: "number", id: "cfgCount", min: "1", max: String(bank.questions.length), value: String(Math.min(cfg.count || bank.questions.length, bank.questions.length)) }), h("p", { class: "small muted" }, "Out of " + bank.questions.length + ". A Yes/No series or case study counts as one question but holds several scored items.")),
+          h("div", { class: "field" }, h("span", null, "Number of questions"), h("input", { type: "number", id: "cfgCount", min: "1", max: String(bank.questions.length), value: String(Math.min(cfg.count || bank.questions.length, bank.questions.length)) }), h("p", { class: "small muted" }, "Out of " + bank.questions.length + (totalUnits(bank.questions) !== bank.questions.length ? ", which make " + totalUnits(bank.questions) + " screens as the exam counts them" : "") + ". A Yes/No series or case study counts as one question but holds several scored items.")),
           h("div", { class: "field" }, h("span", null, "Time limit (minutes, exam mode)"), h("input", { type: "number", id: "cfgMinutes", min: "1", max: "300", value: String(cfg.minutes || 45) }), h("p", { class: "small muted" }, "The real GH-600 allows 120 minutes for about 40–60 questions."))
         ),
         unitList().length ? h("div", { class: "field" }, h("label", { for: "cfgUnit", style: "font-size:0.88rem;font-weight:600" }, "Module and unit"), h("select", { id: "cfgUnit" }, h("option", { value: "", text: "All units" }), unitList().map((x) => h("option", { value: x.key, text: x.label, selected: cfg.unit === x.key })))) : null,
@@ -856,7 +864,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
 
     if (u.section && session.cfg.mode === "exam") {
       panel.append(h("div", { class: "notice", text: u.section.type === "yesno"
-        ? "This question is part of a series that presents the same scenario. After you answer a question in this section and leave it, you will NOT be able to return to it. (" + u.section.n + " of " + u.section.of + ")"
+        ? "Note: This question is part of a series of questions that present the same scenario. Each question in the series contains a unique solution that might meet the stated goals. Some question sets might have more than one correct solution, while others might not have a correct solution. After you answer a question in this section, you will NOT be able to return to it. (" + u.section.n + " of " + u.section.of + ")"
         : "Case study (" + u.section.n + " of " + u.section.of + "). You can move between the questions in this case study, but once you leave it you will NOT be able to return." }));
     }
     if (u.section && u.section.type === "case") {
@@ -962,7 +970,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
 
     if (u.kind === "match") {
       panel.append(prose(u.q.stem));
-      panel.append(h("p", { class: "instruction", text: u.q.reuse === false ? "Match each item to the correct value. Each value may be used only once." : "Match each item to the correct value. Each value may be used once, more than once, or not at all." }));
+      panel.append(h("p", { class: "instruction", text: (u.q.reuse === false ? "To answer, select the appropriate value for each item. Each value may be used only once." : "To answer, select the appropriate value for each item. Each value may be used once, more than once, or not at all.") + " NOTE: Each correct selection is worth one point." }));
       panel.append(h("div", null, h("div", { class: "label", style: "margin-bottom:6px" }, "Values"), h("div", { class: "pool" }, u.q.choices.map((c) => h("span", { html: inline(c.text) })))));
       const a = Object.assign({}, answers[u.key] || {});
       const box = h("div", { class: "match" });
@@ -1009,7 +1017,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
 
     if (u.kind === "dropdown") {
       panel.append(prose(u.q.stem));
-      panel.append(h("p", { class: "instruction", text: "Select the correct option in each box." }));
+      panel.append(h("p", { class: "instruction", text: "To answer, select the appropriate options in the answer area. NOTE: Each correct selection is worth one point." }));
       const a = Object.assign({}, answers[u.key] || {});
       const pre = h("pre", { class: "hot" });
       const parts = String(u.q.template).split(/\[\[(\w+)\]\]/);

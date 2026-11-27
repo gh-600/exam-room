@@ -1,0 +1,3383 @@
+{
+ "title": "GH-600 · Full exam 1 · 60 questions",
+ "version": 1,
+ "author": "Claude. Questions follow the Microsoft Learn modules for GH-600; answers checked against the GitHub Docs source of 26 November 2026. Not reviewed by an independent expert.",
+ "passingScore": 700,
+ "durationMinutes": 120,
+ "domains": {
+  "D1": "Agent architecture and SDLC",
+  "D2": "Tool use and environment interaction",
+  "D3": "Memory, state and execution",
+  "D4": "Evaluation, error analysis and tuning",
+  "D5": "Multi-agent coordination",
+  "D6": "Guardrails and accountability"
+ },
+ "modules": {
+  "M1": {
+   "title": "Foundations of agentic AI in GitHub",
+   "url": "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/",
+   "units": {
+    "U2": "Define agentic AI in the SDLC",
+    "U3": "Explain the agent lifecycle: plan, act, evaluate",
+    "U4": "Describe GitHub as the system of record and control plane",
+    "U5": "Identify responsibilities, risks, anti-patterns, and traceability needs",
+    "U6": "Apply the contributor model to agent-generated work"
+   }
+  },
+  "M2": {
+   "title": "Design agent architecture and SDLC integration",
+   "url": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/",
+   "units": {
+    "U2": "Map agent responsibilities to the SDLC",
+    "U3": "Define inputs, outputs, and success criteria",
+    "U4": "Separate planning, reasoning, and execution",
+    "U5": "Pull request governance controls",
+    "U6": "Build reliable workflows",
+    "U7": "Control and operate agents"
+   }
+  },
+  "M3": {
+   "title": "Agent tooling, MCP and execution environments",
+   "url": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/",
+   "units": {
+    "U2": "How agents interact with GitHub APIs and workflows",
+    "U3": "MCP servers, registries, and allow lists",
+    "U4": "Execution context and boundaries",
+    "U5": "Agent execution limits and protections"
+   }
+  },
+  "M4": {
+   "title": "Multi-agent systems and orchestration",
+   "url": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/",
+   "units": {
+    "U2": "Define multi-agent responsibilities in the SDLC",
+    "U3": "Orchestrate agents using GitHub workflows",
+    "U4": "Isolate execution",
+    "U5": "Detect and resolve conflicts",
+    "U6": "Make the system observable",
+    "U7": "Operate reliably at scale"
+   }
+  },
+  "M5": {
+   "title": "Memory, state and evaluation",
+   "url": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/",
+   "units": {
+    "U2": "Implement agent memory strategies",
+    "U3": "Persist agent state and manage context drift",
+    "U4": "Ensure continuity across tools and environments",
+    "U5": "Define evaluation signals and enforce quality gates",
+    "U6": "Analyze agent failures and improve behavior"
+   }
+  },
+  "M6": {
+   "title": "Governance, guardrails and operations",
+   "url": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/",
+   "units": {
+    "U2": "Define risk-based autonomy and action boundaries",
+    "U3": "Enforce governance with GitHub controls",
+    "U4": "Design human-in-the-loop workflows",
+    "U5": "Control agent capabilities using least privilege",
+    "U6": "Make actions observable, traceable, and auditable",
+    "U7": "Maintain governance and operational reliability"
+   }
+  }
+ },
+ "conflicts": [
+  {
+   "module": "M4",
+   "unit": "U4",
+   "learnSays": "Job-level `concurrency` only applies within a workflow run, not across runs.",
+   "docsSay": "`jobs.<job_id>.concurrency` ensures that only a single job or workflow using the same concurrency group runs at a time, across runs.",
+   "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax"
+  },
+  {
+   "module": "M6",
+   "unit": "U4",
+   "learnSays": "Production deployments are serialized with `concurrency: group: production` and `cancel-in-progress: true`.",
+   "docsSay": "`cancel-in-progress: true` cancels the run that is already in progress when a new one starts. Without it, the new run waits as pending.",
+   "source": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency"
+  },
+  {
+   "module": "M6",
+   "unit": "U3",
+   "learnSays": "A `preToolUse` hook is one JSON object with `hook`, `tools` and `rules`; a guardrail workflow tests for `github-copilot[bot]`; `copilot agent run CodeAgent --allow-tool 'read,search'` gates tools.",
+   "docsSay": "Hook files use `version: 1` with a `hooks` object and commands that return a `permissionDecision`. The examples in the module are illustrative; check the hooks reference and the Copilot CLI reference for real syntax.",
+   "source": "https://docs.github.com/en/copilot/reference/hooks-reference"
+  },
+  {
+   "module": "M3",
+   "unit": "U5",
+   "learnSays": "Copilot in the cloud only has access to the repository where it is working.",
+   "docsSay": "That holds for sessions that run on GitHub Actions. Sessions that run in a cloud sandbox can work across multiple repositories.",
+   "source": "https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-on-github"
+  }
+ ],
+ "questions": [
+  {
+   "id": "x1-d2-mcp-secret-series",
+   "type": "yesno",
+   "domain": "D2",
+   "module": "M2",
+   "unit": "U7",
+   "level": "evaluate",
+   "scenario": "You add a remote MCP server named Server1 to the MCP configuration of GitHub Copilot cloud agent for a GitHub repository named Repo1. Server1 requires an API key in the `Authorization` header.\n\nYou need to ensure that the agent can authenticate to Server1. The API key must not appear in plain text in the MCP configuration or in any file in the repository.",
+   "items": [
+    {
+     "id": "s1",
+     "solution": "You create a GitHub Actions repository secret named `SERVER1_API_KEY`, and you reference it in the `headers` of the MCP configuration.",
+     "answer": "no",
+     "explanation": "The cloud agent can't read secrets that were created for GitHub Actions. It has its own Agents secrets."
+    },
+    {
+     "id": "s2",
+     "solution": "You create an Agents secret named `COPILOT_MCP_SERVER1_API_KEY`, and you reference it in the `headers` of the MCP configuration as `$COPILOT_MCP_SERVER1_API_KEY`.",
+     "answer": "yes",
+     "explanation": "An Agents secret whose name starts with `COPILOT_MCP_` is available to the MCP configuration, and the key itself stays out of the configuration."
+    },
+    {
+     "id": "s3",
+     "solution": "You create an Agents secret named `SERVER1_API_KEY`, and you reference it in the `headers` of the MCP configuration as `$SERVER1_API_KEY`.",
+     "answer": "no",
+     "explanation": "It is an Agents secret, but only names that start with `COPILOT_MCP_` are passed to the MCP configuration."
+    }
+   ],
+   "explanation": "The agent's runtime has its own secret boundary. Secrets for GitHub Actions, Codespaces and Dependabot aren't visible to it. An MCP server gets a credential only from an Agents secret or variable whose name starts with `COPILOT_MCP_`, referenced from the configuration, so the token is injected at run time and never stored in the configuration.",
+   "takeaway": "MCP credential for the cloud agent = an Agents secret named `COPILOT_MCP_…`.",
+   "evidence": [
+    {
+     "quote": "\"The agent's runtime environment has its own secret boundary; don't assume it automatically inherits repository CI secrets.\"",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+     "label": "Microsoft Learn · M2, unit 7"
+    },
+    {
+     "quote": "Authentication: tokens should be injected at runtime via protected secret boundaries.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+     "label": "Microsoft Learn · M2, unit 7"
+    },
+    {
+     "quote": "Only Agents secrets and variables with names prefixed with `COPILOT_MCP_` will be available to your MCP configuration.",
+     "source": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+    "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+    "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers",
+    "https://docs.github.com/en/copilot/tutorials/cloud-agent/give-access-to-resources"
+   ]
+  },
+  {
+   "id": "x1-d1-plan-first",
+   "type": "single",
+   "domain": "D1",
+   "module": "M2",
+   "unit": "U4",
+   "level": "apply",
+   "stem": "An agent will change the authentication flow of a production service in a GitHub repository named Repo1. The change is difficult to reverse.\n\nYou need to ensure that the reviewers agree on the intent of the change before any code is generated. Which workflow should you use?",
+   "options": [
+    {
+     "id": "a",
+     "text": "A plan-first workflow, in which the agent opens a pull request that contains only the plan",
+     "rationale": "Correct. People validate the intent before any code is written, which is the approach for high-risk changes that are difficult to reverse."
+    },
+    {
+     "id": "b",
+     "text": "A plan and execution workflow, in which the plan and the first commits are in the same pull request",
+     "rationale": "Incorrect. Code is generated at once, so the intent is validated only together with the changes. That suits low-risk, reversible work."
+    },
+    {
+     "id": "c",
+     "text": "A workflow in which the agent pushes to `main` and records the plan in the commit message",
+     "rationale": "Incorrect. A direct push skips the pull request, which is where the plan and the change are reviewed."
+    },
+    {
+     "id": "d",
+     "text": "A workflow in which the agent implements the change and a reviewer writes the plan afterwards",
+     "rationale": "Incorrect. A plan written after the change can't be used to validate intent before the change."
+    }
+   ],
+   "answer": [
+    "a"
+   ],
+   "explanation": "Both workflows are reviewed before merge. They differ in when a person validates the work relative to the code. Plan-first puts that validation before any code exists, which reduces early exposure for high-risk work such as authentication, infrastructure, workflows and production.",
+   "takeaway": "High risk or hard to reverse → plan-first. Low risk and reversible → plan and execution.",
+   "evidence": [
+    {
+     "quote": "The agent opens a pull request that contains only the plan (no code changes yet).",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution",
+     "label": "Microsoft Learn · M2, unit 4"
+    },
+    {
+     "quote": "Use plan-first for high-risk work (workflows, infra, auth, production).",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution",
+     "label": "Microsoft Learn · M2, unit 4"
+    },
+    {
+     "quote": "changes are high-risk or difficult to reverse",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution",
+     "label": "Microsoft Learn · M2, unit 4"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution"
+   ]
+  },
+  {
+   "id": "x1-d5-fan-in",
+   "type": "dropdown",
+   "domain": "D5",
+   "module": "M4",
+   "unit": "U3",
+   "level": "apply",
+   "stem": "You are building a GitHub Actions workflow named `multi-agent-orchestration`. Two analysis agents run in parallel, and a third job merges their outputs into one plan.\n\nYou need to ensure that the `plan_merger` job starts only after both analysis jobs finish, and that `plan_merger` jobs for the same branch never run at the same time.\n\nHow should you complete the workflow?",
+   "template": "jobs:\n  spec_analyzer:\n    runs-on: ubuntu-latest\n    steps:\n      - run: ./executors/spec_analyzer.sh\n\n  risk_reviewer:\n    runs-on: ubuntu-latest\n    steps:\n      - run: ./executors/risk_reviewer.sh\n\n  plan_merger:\n    runs-on: ubuntu-latest\n    [[key1]]: [spec_analyzer, risk_reviewer]\n    [[key2]]:\n      group: multiagent-${{ github.ref }}\n    steps:\n      - run: ./executors/plan_merger.sh\n",
+   "blanks": {
+    "key1": {
+     "options": [
+      "environment",
+      "needs",
+      "uses",
+      "with"
+     ],
+     "answer": "needs",
+     "rationale": "`needs` lists the jobs that must complete first, so `plan_merger` waits for both analysis jobs. That is the fan-in. `uses` calls a reusable workflow, `with` passes inputs and `environment` names a deployment environment."
+    },
+    "key2": {
+     "options": [
+      "concurrency",
+      "permissions",
+      "strategy",
+      "timeout-minutes"
+     ],
+     "answer": "concurrency",
+     "rationale": "A `concurrency` group allows only one job in the group to run at a time. Because the group name contains the branch ref, merge jobs for the same branch can't overlap. `strategy` only creates variations of a job inside one run."
+    }
+   },
+   "explanation": "The two analysis jobs have no dependency on each other, so they start in parallel: that is the fan-out. `needs: [spec_analyzer, risk_reviewer]` makes `plan_merger` wait for both: that is the fan-in. A `concurrency` group on the job then keeps two merge jobs for the same branch from running together.",
+   "takeaway": "Fan-in = `needs` with a list of jobs. No overlap = `concurrency` with a group name.",
+   "evidence": [
+    {
+     "quote": "To coordinate multiple agents in parallel and then merge their outputs, use the fan-out/fan-in orchestration with needs.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
+     "label": "Microsoft Learn · M4, unit 3"
+    },
+    {
+     "quote": "You can also limit the concurrency of jobs within a workflow by using the `concurrency` keyword at the job level:",
+     "source": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
+    "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax",
+    "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency"
+   ]
+  },
+  {
+   "id": "x1-d4-real-intent",
+   "type": "single",
+   "domain": "D4",
+   "module": "M2",
+   "unit": "U3",
+   "level": "analyse",
+   "stem": "An agent is assigned an issue to remediate a security alert for a vulnerable dependency in a GitHub repository named Repo1. The agent opens a pull request, all required checks pass, and the agent reports that the task is complete. The alert is still open, because the vulnerable version remains reachable through a transitive dependency.\n\nYou need to change the task definition so that this outcome is no longer accepted as complete. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Add a second approving review to the ruleset for `main`.",
+     "rationale": "Incorrect. A second reviewer sees the same green checks. Nothing in the task says that the alert must close."
+    },
+    {
+     "id": "b",
+     "text": "Instruct the agent to state its confidence level in the pull request description.",
+     "rationale": "Incorrect. Evaluation must rest on system signals, not on how confident the agent is."
+    },
+    {
+     "id": "c",
+     "text": "Increase the number of times that the agent may retry failed checks.",
+     "rationale": "Incorrect. No check failed. The checks passed while the real goal was missed."
+    },
+    {
+     "id": "d",
+     "text": "Add a success criterion that the alert is resolved, and verify it from the security signal.",
+     "rationale": "Correct. The criterion now states the real intent, and it is verified by a signal that the agent doesn't control."
+    }
+   ],
+   "answer": [
+    "d"
+   ],
+   "explanation": "The task was judged by \"tests passed\" when its intent was \"vulnerability resolved\". Passing checks are necessary, but they only validate what they were built to detect. A success criterion must describe the real outcome and be measured by a system signal, here the state of the alert.",
+   "takeaway": "Write success criteria for the real intent, and measure them with a system signal.",
+   "evidence": [
+    {
+     "quote": "\"CI passed\" is necessary, but not always sufficient. Make success criteria reflect the real intent of the task (for example, \"vulnerability resolved\" rather than \"tests passed\").",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/3-inputs-outputs-success-criteria",
+     "label": "Microsoft Learn · M2, unit 3"
+    },
+    {
+     "quote": "These capabilities reinforce a key lesson: agent evaluation must be grounded in system signals, not in the agent's confidence.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/3-explain-agent-lifecycle-plan-act-evaluate",
+     "label": "Microsoft Learn · M1, unit 3"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/3-inputs-outputs-success-criteria",
+    "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/3-explain-agent-lifecycle-plan-act-evaluate"
+   ]
+  },
+  {
+   "id": "x1-d6-autonomy-levels",
+   "type": "match",
+   "domain": "D6",
+   "module": "M6",
+   "unit": "U2",
+   "level": "understand",
+   "stem": "You are assigning an autonomy level to each agent in a GitHub organization named Org1.\n\nWhich autonomy level describes each agent?",
+   "choices": [
+    {
+     "id": "read",
+     "text": "Read-only autonomy"
+    },
+    {
+     "id": "propose",
+     "text": "Propose-only autonomy"
+    },
+    {
+     "id": "guard",
+     "text": "Execute with guardrails"
+    },
+    {
+     "id": "human",
+     "text": "Human-authorized execution"
+    }
+   ],
+   "targets": [
+    {
+     "id": "t1",
+     "text": "An agent that runs pre-approved test, build, and staging deployment workflows within defined limits",
+     "answer": "guard",
+     "rationale": "It executes, but only workflows that were approved in advance and within limits."
+    },
+    {
+     "id": "t2",
+     "text": "An agent that classifies new issues and recommends labels, and that cannot modify anything",
+     "answer": "read",
+     "rationale": "It inspects, classifies and recommends. It changes nothing."
+    },
+    {
+     "id": "t3",
+     "text": "An agent that deploys to production only after a reviewer approves the deployment",
+     "answer": "human",
+     "rationale": "A high-impact action happens only after a human approves it."
+    },
+    {
+     "id": "t4",
+     "text": "An agent that creates branches and pull requests, and that cannot merge or deploy",
+     "answer": "propose",
+     "rationale": "It proposes changes through pull requests. Acceptance stays with people and policy."
+    }
+   ],
+   "explanation": "The four levels grow with the impact of what the agent may do: inspect only, propose through pull requests, run pre-approved workflows inside limits, and perform high-impact actions only after a human approves. Autonomy is usually a combination of pull request rules, environments, workflow permissions and tool access, not one setting.",
+   "takeaway": "Read-only → propose-only → execute with guardrails → human-authorized execution.",
+   "evidence": [
+    {
+     "quote": "Read-only autonomy: Agent can inspect, summarize, classify, and recommend changes, but can't modify anything.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    },
+    {
+     "quote": "Propose-only autonomy: Agent can create branches and pull requests, but can't merge or deploy.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    },
+    {
+     "quote": "Execute with guardrails: Agent can run pre-approved workflows (tests, builds, staging deploys) within defined limits.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    },
+    {
+     "quote": "Human-authorized execution: Agent can perform high-impact actions only after a human approves (production deploy, workflow changes, secret access).",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy"
+   ]
+  },
+  {
+   "id": "x1-d3-source-of-truth",
+   "type": "match",
+   "domain": "D3",
+   "module": "M5",
+   "unit": "U4",
+   "level": "apply",
+   "stem": "An agent works on tasks in a GitHub repository named Repo1 from an IDE, from the CLI, and in a GitHub-hosted environment. You are defining a single source of truth for each type of information.\n\nWhere should you store each type of information?",
+   "choices": [
+    {
+     "id": "issue",
+     "text": "Issue"
+    },
+    {
+     "id": "pr",
+     "text": "Pull request"
+    },
+    {
+     "id": "instr",
+     "text": "Repository instructions"
+    },
+    {
+     "id": "runs",
+     "text": "Workflow runs and artifacts"
+    }
+   ],
+   "targets": [
+    {
+     "id": "t1",
+     "text": "The validation rules that apply to every task in the repository",
+     "answer": "instr",
+     "rationale": "Rules that hold for every task belong in repository instructions, not in one issue or pull request."
+    },
+    {
+     "id": "t2",
+     "text": "The requirements that define a task before any work starts",
+     "answer": "issue",
+     "rationale": "Requirements live in the issue, which exists before a branch or pull request does."
+    },
+    {
+     "id": "t3",
+     "text": "The results of the tests that validated a change",
+     "answer": "runs",
+     "rationale": "Execution results are produced and kept by workflow runs and their artifacts."
+    },
+    {
+     "id": "t4",
+     "text": "The decisions taken and the progress made while implementing a task",
+     "answer": "pr",
+     "rationale": "The pull request gathers commits, checks and discussion, so decisions and progress are recorded there."
+    }
+   ],
+   "explanation": "Each type of information gets one location, so every tool reads the same value. Requirements go in the issue, decisions and progress in the pull request, validation rules in repository instructions, and results in workflow runs and artifacts.",
+   "takeaway": "Issue = requirements. Pull request = decisions and progress. Instructions = rules. Runs = results.",
+   "evidence": [
+    {
+     "quote": "Requirements live in issues",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity",
+     "label": "Microsoft Learn · M5, unit 4"
+    },
+    {
+     "quote": "Decisions and progress live in pull requests",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity",
+     "label": "Microsoft Learn · M5, unit 4"
+    },
+    {
+     "quote": "Validation rules live in repository instructions",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity",
+     "label": "Microsoft Learn · M5, unit 4"
+    },
+    {
+     "quote": "Execution results live in workflow runs and artifacts",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity",
+     "label": "Microsoft Learn · M5, unit 4"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity",
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/2-agent-memory-strategies"
+   ]
+  },
+  {
+   "id": "x1-d2-setup-steps",
+   "type": "single",
+   "domain": "D2",
+   "module": "M3",
+   "unit": "U5",
+   "level": "apply",
+   "stem": "GitHub Copilot cloud agent works on a .NET repository named Repo1. In each session, the agent spends several minutes discovering and installing the .NET SDK and restoring NuGet packages, and the installation sometimes fails.\n\nYou need to preinstall the tools and the dependencies in the agent's environment before the agent starts working. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Add the installation commands to the custom instructions file of the repository.",
+     "rationale": "Incorrect. Instructions tell the agent what to run. The agent would still install everything itself during the session, by trial and error."
+    },
+    {
+     "id": "b",
+     "text": "Add a `preToolUse` hook that installs the SDK and the packages before each tool call.",
+     "rationale": "Incorrect. A `preToolUse` hook approves or denies a tool call. It isn't the place to build the environment."
+    },
+    {
+     "id": "c",
+     "text": "Add a `copilot-setup-steps.yml` workflow file that installs them, and commit it to the default branch.",
+     "rationale": "Correct. The steps of its `copilot-setup-steps` job run in the agent's environment before the agent starts, so the SDK and the packages are already there."
+    },
+    {
+     "id": "d",
+     "text": "Create a workflow that runs on `push` and caches the NuGet packages for later runs.",
+     "rationale": "Incorrect. That workflow runs in its own runner for its own event. It doesn't prepare the environment of an agent session."
+    }
+   ],
+   "answer": [
+    "c"
+   ],
+   "explanation": "The cloud agent works in an ephemeral environment that is powered by GitHub Actions. You prepare that environment with a workflow file at a fixed path that contains a single job with a fixed name, `copilot-setup-steps`. The file must exist on the default branch.",
+   "takeaway": "Prepare the agent's environment with `copilot-setup-steps.yml`: fixed path, fixed job name, default branch.",
+   "evidence": [
+    {
+     "quote": "On GitHub, Copilot in the cloud works in a GitHub Actions-powered environment, creates changes on a branch, and prepares those changes for review.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+     "label": "Microsoft Learn · M3, unit 5"
+    },
+    {
+     "note": "You customize Copilot's environment with a workflow file located at `.github/workflows/copilot-setup-steps.yml`. It must contain a single `copilot-setup-steps` job, whose steps run before Copilot starts working, and it won't trigger unless it is present on the default branch.",
+     "source": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/customize-the-agent-environment",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+    "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/customize-the-agent-environment"
+   ]
+  },
+  {
+   "id": "x1-d1-read-only-planner",
+   "type": "single",
+   "domain": "D1",
+   "module": "M2",
+   "unit": "U4",
+   "level": "analyse",
+   "stem": "You configure a planning agent. The agent's instructions contain the following text: \"Do not edit files. Produce a plan only.\" During a planning session, the agent modifies two source files.\n\nYou need to guarantee that the planning agent cannot modify files. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Repeat the instruction at the start and at the end of the agent's instructions.",
+     "rationale": "Incorrect. An instruction is still guidance, however often it is repeated. The model can fail to follow it."
+    },
+    {
+     "id": "b",
+     "text": "Add a required Plan section to the pull request template.",
+     "rationale": "Incorrect. A template makes the plan visible. It doesn't take away the agent's ability to edit files."
+    },
+    {
+     "id": "c",
+     "text": "Ask the reviewers to reject every plan that is delivered together with code changes.",
+     "rationale": "Incorrect. That detects the edit after it happened and depends on people noticing it."
+    },
+    {
+     "id": "d",
+     "text": "Limit the planning agent to read-only tools.",
+     "rationale": "Correct. Without a tool that can write, the agent has no way to modify a file, whatever it decides to do."
+    }
+   ],
+   "answer": [
+    "d"
+   ],
+   "explanation": "This is the difference between guidance and enforcement. An instruction asks the agent to behave in a certain way. A capability boundary removes the ability: a planning agent that only has read-only tools cannot change files.",
+   "takeaway": "Instructions are guidance. Tool allowlists and gates are enforcement.",
+   "evidence": [
+    {
+     "quote": "A planning agent should be limited to read-only tools so it cannot modify files during planning.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution",
+     "label": "Microsoft Learn · M2, unit 4"
+    },
+    {
+     "quote": "Treat \"instructions not to edit\" as guidance; treat tool allowlists and gates as enforcement.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution",
+     "label": "Microsoft Learn · M2, unit 4"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution"
+   ]
+  },
+  {
+   "id": "x1-d5-workflow-run",
+   "type": "single",
+   "domain": "D5",
+   "module": "M4",
+   "unit": "U3",
+   "level": "apply",
+   "stem": "You have a GitHub repository named Repo1 that contains two workflow files. The first workflow is named `CI Validation` and builds and tests pull requests from a dependency agent. The second workflow is named `Security Validation`.\n\nYou need to ensure that Security Validation starts automatically each time a CI Validation run finishes. You must not change the CI Validation workflow file.\n\nWhich trigger event should you configure in Security Validation?",
+   "options": [
+    {
+     "id": "a",
+     "text": "`workflow_dispatch`",
+     "rationale": "Incorrect. `workflow_dispatch` starts a run manually or through the API. Nothing would start it when CI Validation finishes."
+    },
+    {
+     "id": "b",
+     "text": "`workflow_run`",
+     "rationale": "Correct. `workflow_run` names the `CI Validation` workflow and reacts to its `completed` activity type, without any change to that workflow."
+    },
+    {
+     "id": "c",
+     "text": "`workflow_call`",
+     "rationale": "Incorrect. `workflow_call` makes Security Validation reusable, but CI Validation would then have to call it, and you must not change that file."
+    },
+    {
+     "id": "d",
+     "text": "`pull_request`",
+     "rationale": "Incorrect. Both workflows would start together on each push to the pull request, so Security Validation wouldn't wait for CI to finish."
+    }
+   ],
+   "answer": [
+    "b"
+   ],
+   "explanation": "Sequential orchestration means one step runs only after another has finished. Between two separate workflows, the `workflow_run` trigger expresses that order: the second workflow names the first one and reacts to its `completed` activity type.",
+   "takeaway": "Run workflow B after workflow A, without touching A: `on: workflow_run` in B.",
+   "evidence": [
+    {
+     "quote": "workflow completion triggers when one step should run after another.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
+     "label": "Microsoft Learn · M4, unit 3"
+    },
+    {
+     "quote": "Use this pattern when one agent's output must be validated before another step can proceed.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
+     "label": "Microsoft Learn · M4, unit 3"
+    },
+    {
+     "quote": "This event occurs when a workflow run is requested or completed. It allows you to execute a workflow based on execution or completion of another workflow.",
+     "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
+    "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows"
+   ]
+  },
+  {
+   "id": "x1-d4-root-cause",
+   "type": "match",
+   "domain": "D4",
+   "module": "M5",
+   "unit": "U6",
+   "level": "analyse",
+   "stem": "You are analyzing four failed agent tasks in a GitHub repository named Repo1 so that you can decide what to improve.\n\nWhich root cause category does each failure belong to?",
+   "choices": [
+    {
+     "id": "reasoning",
+     "text": "Reasoning error"
+    },
+    {
+     "id": "tool",
+     "text": "Tool misuse"
+    },
+    {
+     "id": "context",
+     "text": "Context issue"
+    }
+   ],
+   "targets": [
+    {
+     "id": "t1",
+     "text": "The agent based its change on a pull request state that newer commits had replaced.",
+     "answer": "context",
+     "rationale": "The agent worked from stale information: an outdated pull request state."
+    },
+    {
+     "id": "t2",
+     "text": "The agent implemented a discount rule that ignores one of the acceptance criteria in the issue.",
+     "answer": "reasoning",
+     "rationale": "The information was available and correct. The agent's decision was wrong."
+    },
+    {
+     "id": "t3",
+     "text": "The validation never ran, because the agent's workflow was configured for the wrong event.",
+     "answer": "tool",
+     "rationale": "A workflow was misconfigured and wasn't triggered properly."
+    },
+    {
+     "id": "t4",
+     "text": "The issue and the pull request description gave different values for a timeout, and the agent applied the wrong one.",
+     "answer": "context",
+     "rationale": "Two artifacts held conflicting information, so the context itself was faulty."
+    }
+   ],
+   "explanation": "The category points to the fix. A reasoning error is fixed with clearer prompts and instructions. Tool misuse is fixed in the tool configuration, such as workflow triggers and permissions. A context issue is fixed in memory and state: remove stale or conflicting information and keep one source of truth.",
+   "takeaway": "Wrong decision = reasoning. Wrong use of a workflow or command = tool. Stale, missing or conflicting information = context.",
+   "evidence": [
+    {
+     "quote": "Ignoring acceptance criteria",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+     "label": "Microsoft Learn · M5, unit 6"
+    },
+    {
+     "quote": "Failing to trigger or use workflows properly",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+     "label": "Microsoft Learn · M5, unit 6"
+    },
+    {
+     "quote": "Using outdated pull request state",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+     "label": "Microsoft Learn · M5, unit 6"
+    },
+    {
+     "quote": "Conflicting information across artifacts",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+     "label": "Microsoft Learn · M5, unit 6"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement"
+   ]
+  },
+  {
+   "id": "x1-d6-risk-routing",
+   "type": "dropdown",
+   "domain": "D6",
+   "module": "M6",
+   "unit": "U2",
+   "level": "apply",
+   "stem": "A workflow named `agent-plan-apply` has a job named `plan` that reads a machine-readable risk rating from an agent's plan and exposes it as the job output `risk`.\n\nPlans that are rated `low` must be applied automatically. All other plans must wait for the approval of the required reviewers of an environment named `approval-required`.\n\nYou need to route each plan according to its risk rating.\n\nHow should you complete the workflow?",
+   "template": "  apply:\n    needs: plan\n    runs-on: ubuntu-latest\n    [[gate]]: approval-required\n    if: ${{ needs.plan.outputs.risk [[apply_if]] 'low' }}\n    steps:\n      - run: ./scripts/apply.sh out/plan.json\n\n  apply_auto:\n    needs: plan\n    runs-on: ubuntu-latest\n    if: ${{ needs.plan.outputs.risk [[auto_if]] 'low' }}\n    steps:\n      - run: ./scripts/apply.sh out/plan.json\n",
+   "blanks": {
+    "gate": {
+     "options": [
+      "concurrency",
+      "environment",
+      "permissions"
+     ],
+     "answer": "environment",
+     "rationale": "A job that references an environment with required reviewers waits until a reviewer approves it. `concurrency` only serializes runs, and `permissions` only scopes the token."
+    },
+    "apply_if": {
+     "options": [
+      "!=",
+      "=="
+     ],
+     "answer": "!=",
+     "rationale": "The gated job must run for every rating that is not `low`."
+    },
+    "auto_if": {
+     "options": [
+      "!=",
+      "=="
+     ],
+     "answer": "==",
+     "rationale": "The job without a gate must run only when the rating is `low`."
+    }
+   },
+   "explanation": "The risk rating is a job output, so the routing is decided by the workflow and not by a description that someone has to interpret. The job for anything other than `low` targets the environment and therefore waits for approval. The job for `low` has no environment and runs at once.",
+   "takeaway": "Route on a machine-readable risk signal: `if` picks the job, `environment` adds the approval.",
+   "evidence": [
+    {
+     "quote": "Decision guidance: Don’t rely on narrative explanations of risk. Use a machine-readable signal and enforce routing.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    },
+    {
+     "quote": "High-risk plans require explicit human approval",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    },
+    {
+     "quote": "Jobs that reference an environment configured with required reviewers will wait for an approval before starting.",
+     "source": "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+    "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments"
+   ]
+  },
+  {
+   "id": "x1-d3-resume",
+   "type": "single",
+   "domain": "D3",
+   "module": "M5",
+   "unit": "U3",
+   "level": "apply",
+   "stem": "An agent started work on an issue in a GitHub repository named Repo1 and opened a pull request. The session ended before the work was complete. A new agent session must now finish the task.\n\nYou need to ensure that the new session continues the work without repeating completed steps. What should the agent do first?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Create a new branch from `main` and implement the issue again from its description.",
+     "rationale": "Incorrect. This discards the commits already made and repeats the work."
+    },
+    {
+     "id": "b",
+     "text": "Ask the user to paste the chat history of the earlier session into the prompt.",
+     "rationale": "Incorrect. Chat history is session context. It may be incomplete, and it isn't the recorded state of the work."
+    },
+    {
+     "id": "c",
+     "text": "Open the existing pull request and review its description, linked issue, commits, and check results.",
+     "rationale": "Correct. The pull request holds the plan, the work done and the validation results, so the agent can continue from the latest state."
+    },
+    {
+     "id": "d",
+     "text": "Close the pull request and open a new one that references the same issue.",
+     "rationale": "Incorrect. Recreating the pull request is a reset, used when requirements or the approach change. Nothing changed here."
+    }
+   ],
+   "answer": [
+    "c"
+   ],
+   "explanation": "State is stored in GitHub artifacts, not in the session. To resume, the agent opens the existing pull request, reads the description and linked issue, checks the commits and the results in the Checks tab, and continues from there.",
+   "takeaway": "To resume, re-anchor to the pull request, never to the previous session.",
+   "evidence": [
+    {
+     "quote": "Agent workflows may pause or move between environments. To resume work correctly, the agent should rely on stored state instead of starting over.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+     "label": "Microsoft Learn · M5, unit 3"
+    },
+    {
+     "quote": "Because GitHub preserves commit history and workflow runs, the agent can identify completed work and avoid duplication.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+     "label": "Microsoft Learn · M5, unit 3"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift"
+   ]
+  },
+  {
+   "id": "x1-d2-mcp-config",
+   "type": "dropdown",
+   "domain": "D2",
+   "module": "M3",
+   "unit": "U3",
+   "level": "apply",
+   "stem": "You are adding a remote MCP server for a ticketing system to the MCP configuration of GitHub Copilot cloud agent for a GitHub repository named Repo1. The agent must be able to use only the tools named `get_ticket` and `search_tickets`.\n\nYou need to configure the MCP server for the agent.\n\nHow should you complete the configuration?",
+   "template": "{\n  \"[[root]]\": {\n    \"tickets\": {\n      \"type\": \"[[type]]\",\n      \"[[endpoint]]\": \"https://mcp.contoso.com/tickets\",\n      \"tools\": [\"get_ticket\", \"search_tickets\"]\n    }\n  }\n}\n",
+   "blanks": {
+    "root": {
+     "options": [
+      "mcpServers",
+      "servers",
+      "tools"
+     ],
+     "answer": "mcpServers",
+     "rationale": "The cloud agent's configuration is a JSON object with an `mcpServers` object, in which each key is a server name. `servers` is the root key of the VS Code configuration file."
+    },
+    "type": {
+     "options": [
+      "http",
+      "local",
+      "stdio"
+     ],
+     "answer": "http",
+     "rationale": "A remote server is reached over the network. `local` and `stdio` start a process from a `command` with `args`."
+    },
+    "endpoint": {
+     "options": [
+      "args",
+      "command",
+      "url"
+     ],
+     "answer": "url",
+     "rationale": "A remote server requires `url`. `command` and `args` are the required keys of a local server."
+    }
+   },
+   "explanation": "An MCP server exposes tools, and the configuration decides which of them the agent gets. For the cloud agent, every server needs `type` and `tools`. A remote server also needs `url`, and a local one needs `command` and `args`. Listing the two read-only tools, and not `*`, keeps the agent's reach narrow, which matters because the agent uses configured tools without asking for approval.",
+   "takeaway": "Cloud agent MCP: `mcpServers` → server → `type`, `tools`, and `url` or `command` with `args`.",
+   "evidence": [
+    {
+     "quote": "Namespace control: prefer enabling a narrow tool subset rather than broad wildcards.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+     "label": "Microsoft Learn · M2, unit 7"
+    },
+    {
+     "quote": "A remote MCP server is hosted elsewhere and accessed over the network.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+     "label": "Microsoft Learn · M3, unit 3"
+    },
+    {
+     "quote": "The JSON must contain an `mcpServers` object, where the key is the name of the MCP server (for example, `sentry`), and the value is an object with the configuration for that MCP server.",
+     "source": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+    "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers"
+   ]
+  },
+  {
+   "id": "x1-d1-control-plane-statements",
+   "type": "statements",
+   "domain": "D1",
+   "module": "M1",
+   "unit": "U4",
+   "level": "understand",
+   "stem": "You are describing how GitHub acts as the control plane for the work of agents.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.\n\nNOTE: Each correct selection is worth one point.",
+   "items": [
+    {
+     "id": "s1",
+     "statement": "CODEOWNERS routes review requests based on the paths that a pull request changes.",
+     "answer": "yes",
+     "explanation": "CODEOWNERS maps paths to owners, and the owners are requested as reviewers when those paths change."
+    },
+    {
+     "id": "s2",
+     "statement": "A job that targets an environment with required reviewers starts immediately and requests approval after it finishes.",
+     "answer": "no",
+     "explanation": "The job waits. It starts only after a required reviewer approves, which is what protects the environment's secrets."
+    },
+    {
+     "id": "s3",
+     "statement": "Required status checks turn evaluation into a policy that is enforced before merging.",
+     "answer": "yes",
+     "explanation": "A required check must pass before the merge, so the evidence from CI becomes a condition and not just information."
+    }
+   ],
+   "explanation": "GitHub is the control plane because it has enforcement points that shape what an agent's contribution can do: pull requests, required reviews, required status checks, CODEOWNERS, rulesets and environments. Each one enforces something specific, and each has to be turned on.",
+   "takeaway": "CODEOWNERS routes, required checks enforce evidence, environments hold a job until approval.",
+   "evidence": [
+    {
+     "quote": "If a workflow job targets an environment with required reviewers, the job waits until approval is granted.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/4-describe-github-system-record-control-plane",
+     "label": "Microsoft Learn · M1, unit 4"
+    },
+    {
+     "quote": "The supervision model works everywhere; enforcement requires the controls to be turned on.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/4-describe-github-system-record-control-plane",
+     "label": "Microsoft Learn · M1, unit 4"
+    },
+    {
+     "quote": "Jobs that reference an environment configured with required reviewers will wait for an approval before starting.",
+     "source": "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/4-describe-github-system-record-control-plane",
+    "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments"
+   ]
+  },
+  {
+   "id": "x1-d5-concurrency-group",
+   "type": "single",
+   "domain": "D5",
+   "module": "M4",
+   "unit": "U4",
+   "level": "analyse",
+   "stem": "A GitHub repository named Repo1 has two workflows named `agent-lint` and `agent-tests`. Both run on every push to a pull request branch, and several agent sessions push to the same branches many times an hour. Both workflows contain the following block.\n\n```yaml\nconcurrency:\n  group: ${{ github.ref }}\n  cancel-in-progress: true\n```\n\nYou discover that an `agent-tests` run is canceled whenever `agent-lint` starts on the same branch.\n\nYou need to ensure that each workflow cancels only its own outdated runs on a branch. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Set `cancel-in-progress` to `false` in both workflows.",
+     "rationale": "Incorrect. Both workflows would still share one group per branch, so the runs of one workflow would wait for, or replace pending runs of, the other."
+    },
+    {
+     "id": "b",
+     "text": "Move the `concurrency` block from the workflow level to each job.",
+     "rationale": "Incorrect. The group name would still be the branch ref alone, so the jobs of both workflows would stay in the same group."
+    },
+    {
+     "id": "c",
+     "text": "Change the group to `${{ github.run_id }}` in both workflows.",
+     "rationale": "Incorrect. A run ID is unique, so every run would be alone in its group and outdated runs would never be canceled."
+    },
+    {
+     "id": "d",
+     "text": "Change the group to `${{ github.workflow }}-${{ github.ref }}` in both workflows.",
+     "rationale": "Correct. The group is now specific to one workflow on one branch, so a new run cancels only the earlier run of the same workflow."
+    }
+   ],
+   "answer": [
+    "d"
+   ],
+   "explanation": "A concurrency group belongs to the repository, not to a workflow. With `${{ github.ref }}` alone, every workflow that uses that group shares one slot per branch, so `agent-lint` cancels `agent-tests`. Adding `${{ github.workflow }}` to the name gives each workflow its own group on each branch.",
+   "takeaway": "Group names must be unique across workflows: `${{ github.workflow }}-${{ github.ref }}`.",
+   "evidence": [
+    {
+     "quote": "Setting only `${{ github.ref }}` without workflow makes concurrency global to the branch, potentially blocking unrelated workflows from running.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/4-execution-isolation-permissions-concurrency",
+     "label": "Microsoft Learn · M4, unit 4"
+    },
+    {
+     "quote": "If you have multiple workflows in the same repository, concurrency group names must be unique across workflows to avoid canceling in-progress jobs or runs from other workflows.",
+     "source": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/4-execution-isolation-permissions-concurrency",
+    "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency"
+   ]
+  },
+  {
+   "id": "x1-d4-feedback-loop",
+   "type": "build",
+   "domain": "D4",
+   "module": "M5",
+   "unit": "U6",
+   "level": "apply",
+   "stem": "An agent in a GitHub repository named Repo1 often produces pull requests that fail validation. You run the agent on a task, and you need to improve its behavior by using a feedback loop.\n\nWhich four actions should you perform in sequence after the agent has run?",
+   "items": [
+    {
+     "id": "observe",
+     "text": "Observe the failures in the workflow logs and artifacts."
+    },
+    {
+     "id": "cause",
+     "text": "Identify the root cause of the failures."
+    },
+    {
+     "id": "fix",
+     "text": "Apply a fix to the prompts, the memory, or the tool configuration."
+    },
+    {
+     "id": "rerun",
+     "text": "Re-run the workflow."
+    },
+    {
+     "id": "remove",
+     "text": "Remove the failing checks from the required status checks."
+    },
+    {
+     "id": "writeall",
+     "text": "Grant write access for all scopes to the workflow token."
+    }
+   ],
+   "answer": [
+    "observe",
+    "cause",
+    "fix",
+    "rerun"
+   ],
+   "explanation": "Improvement is iterative: look at the evidence first, name the cause, change the one thing that the cause points to, and run again to confirm. Removing checks or widening permissions hides the failure instead of correcting the behavior.",
+   "takeaway": "Observe → root cause → fix prompts, memory or tools → re-run.",
+   "evidence": [
+    {
+     "quote": "Observe failures through logs and artifacts",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+     "label": "Microsoft Learn · M5, unit 6"
+    },
+    {
+     "quote": "Identify the root cause",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+     "label": "Microsoft Learn · M5, unit 6"
+    },
+    {
+     "quote": "Apply fixes to prompts, memory, or tools",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+     "label": "Microsoft Learn · M5, unit 6"
+    },
+    {
+     "quote": "Re-run the workflow",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+     "label": "Microsoft Learn · M5, unit 6"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement"
+   ]
+  },
+  {
+   "id": "x1-d6-security-failure",
+   "type": "single",
+   "domain": "D6",
+   "module": "M6",
+   "unit": "U7",
+   "level": "analyse",
+   "stem": "An agent opens a pull request in a GitHub repository named Repo1. A required code scanning check fails, because the change introduces a vulnerability. The agent pushes three more commits that rearrange the code, and the check fails each time with the same alert. The team's recovery policy allows bounded retries for transient failures.\n\nYou need to apply the correct recovery strategy. What should occur next?",
+   "options": [
+    {
+     "id": "a",
+     "text": "The agent continues to push new commits until the check passes.",
+     "rationale": "Incorrect. The failure isn't transient, and repeated attempts with the same result are a loop that the policy is meant to stop."
+    },
+    {
+     "id": "b",
+     "text": "The check is removed from the required status checks for pull requests that agents open.",
+     "rationale": "Incorrect. That removes the control that detected the problem and creates a bypass path."
+    },
+    {
+     "id": "c",
+     "text": "Automated iteration stops, and the failure is escalated to a human for investigation.",
+     "rationale": "Correct. A security failure is investigated, not retried, and a failure that repeats with the same signature is escalated."
+    },
+    {
+     "id": "d",
+     "text": "The agent dismisses the alert as a false positive and requests a review.",
+     "rationale": "Incorrect. The agent would be deciding on its own evidence. A person must judge a security finding."
+    }
+   ],
+   "answer": [
+    "c"
+   ],
+   "explanation": "Recovery strategies depend on the kind of failure. A transient failure, such as a network error, may be retried within a limit. A security failure isn't transient: it is investigated. And when the same required check fails repeatedly with the same signature, automation stops and a human takes over.",
+   "takeaway": "Retry transient failures. Investigate security failures. Escalate repeated ones.",
+   "evidence": [
+    {
+     "quote": "Investigate security failures instead of repeatedly retrying",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/7-maintain-governance-operational-reliability",
+     "label": "Microsoft Learn · M6, unit 7"
+    },
+    {
+     "quote": "Escalate after repeated failures",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/7-maintain-governance-operational-reliability",
+     "label": "Microsoft Learn · M6, unit 7"
+    },
+    {
+     "quote": "if required checks fail twice with the same failure signature, or",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration",
+     "label": "Microsoft Learn · M4, unit 5"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/7-maintain-governance-operational-reliability",
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration"
+   ]
+  },
+  {
+   "id": "x1-d3-drift",
+   "type": "single",
+   "domain": "D3",
+   "module": "M5",
+   "unit": "U3",
+   "level": "analyse",
+   "stem": "An agent is implementing an issue in a GitHub repository named Repo1. The acceptance criteria require input validation for one API endpoint. After several iterations, the pull request also contains a refactoring of the logging subsystem, and the latest commits contradict a design decision that is recorded in the pull request description.\n\nYou need to correct the context drift. What should the agent do first?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Re-read the issue and the pull request description, and compare the current changes with the acceptance criteria.",
+     "rationale": "Correct. Drift is corrected by returning to the source of truth and measuring the changes against it."
+    },
+    {
+     "id": "b",
+     "text": "Update the acceptance criteria in the issue so that they include the logging refactoring.",
+     "rationale": "Incorrect. That changes the goal to match the drift. The requirement didn't change."
+    },
+    {
+     "id": "c",
+     "text": "Start a new session that continues from the agent's own summary of its earlier work.",
+     "rationale": "Incorrect. The agent's summary carries the same drifted context forward."
+    },
+    {
+     "id": "d",
+     "text": "Merge the pull request and create a follow-up issue for the logging changes.",
+     "rationale": "Incorrect. That accepts changes that don't match the acceptance criteria."
+    }
+   ],
+   "answer": [
+    "a"
+   ],
+   "explanation": "Two signs of drift appear here: changes that go beyond the acceptance criteria and commits that contradict an earlier decision. The correction starts by re-reading the issue and the pull request description, then comparing the changes with the criteria.",
+   "takeaway": "Drift is corrected against the source of truth, not against the agent's own account.",
+   "evidence": [
+    {
+     "quote": "Context drift occurs when the agent’s actions no longer align with the original goal or prior decisions.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+     "label": "Microsoft Learn · M5, unit 3"
+    },
+    {
+     "quote": "To correct drift, the agent should be re-aligned with the source of truth.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+     "label": "Microsoft Learn · M5, unit 3"
+    },
+    {
+     "quote": "Compare current changes with acceptance criteria",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+     "label": "Microsoft Learn · M5, unit 3"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift"
+   ]
+  },
+  {
+   "id": "x1-d2-app-token",
+   "type": "single",
+   "domain": "D2",
+   "module": "M3",
+   "unit": "U5",
+   "level": "analyse",
+   "stem": "A scheduled workflow in a GitHub repository named Repo1 runs an agent that commits generated documentation to a branch by using the `GITHUB_TOKEN`. A second workflow that runs on `push` and publishes the documentation never starts after these commits.\n\nYou need to ensure that the publishing workflow runs after the agent's commits. The solution must not use long-lived personal credentials.\n\nWhat should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Grant the `contents: write` permission to the `GITHUB_TOKEN`.",
+     "rationale": "Incorrect. The token can already push. The limit is that events caused by `GITHUB_TOKEN` don't start new workflow runs."
+    },
+    {
+     "id": "b",
+     "text": "Push the commits by using an installation access token of a GitHub App.",
+     "rationale": "Correct. A push made with an app token creates the `push` event that starts the workflow, and the token is short-lived and not tied to a person."
+    },
+    {
+     "id": "c",
+     "text": "Push the commits by using a personal access token of a repository administrator.",
+     "rationale": "Incorrect. It would trigger the workflow, but it is a long-lived personal credential."
+    },
+    {
+     "id": "d",
+     "text": "Change the trigger of the publishing workflow from `push` to `pull_request`.",
+     "rationale": "Incorrect. No pull request is involved, so the workflow would still not start."
+    }
+   ],
+   "answer": [
+    "b"
+   ],
+   "explanation": "Events that are triggered with the repository's `GITHUB_TOKEN` don't create new workflow runs, which protects against recursive runs. To start one workflow from another on purpose, use a different credential. A GitHub App installation token does that without a personal credential, and the design must then avoid loops.",
+   "takeaway": "`GITHUB_TOKEN` pushes don't trigger workflows. Use a GitHub App token when one must.",
+   "evidence": [
+    {
+     "quote": "Most actions performed with this token don't trigger extra workflow runs, which helps prevent unintended loops or repeated execution.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+     "label": "Microsoft Learn · M3, unit 5"
+    },
+    {
+     "quote": "Other authentication methods, such as GitHub App tokens or personal access tokens (PATs), can trigger extra workflow runs depending on configuration.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+     "label": "Microsoft Learn · M3, unit 5"
+    },
+    {
+     "quote": "For example, if a workflow run pushes code using the repository's `GITHUB_TOKEN`, a new workflow will not run even when the repository contains a workflow configured to run when `push` events occur.",
+     "source": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+    "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow",
+    "https://docs.github.com/en/actions/concepts/security/github_token"
+   ]
+  },
+  {
+   "id": "x1-d1-job-outputs",
+   "type": "dropdown",
+   "domain": "D1",
+   "module": "M2",
+   "unit": "U6",
+   "level": "apply",
+   "stem": "You are building a workflow in which a job named `plan` generates a plan and a job named `implement` uses it.\n\nYou need to pass the plan from the `plan` job to the `implement` job as a structured value.\n\nHow should you complete the workflow?",
+   "template": "jobs:\n  plan:\n    runs-on: ubuntu-latest\n    outputs:\n      plan: ${{ steps.generate_plan.outputs.plan }}\n    steps:\n      - id: generate_plan\n        run: echo \"plan=...\" >> \"[[file]]\"\n\n  implement:\n    runs-on: ubuntu-latest\n    [[dep]]: plan\n    steps:\n      - run: echo \"Using plan: ${{ [[expr]] }}\"\n",
+   "blanks": {
+    "file": {
+     "options": [
+      "$GITHUB_ENV",
+      "$GITHUB_OUTPUT",
+      "$GITHUB_STEP_SUMMARY"
+     ],
+     "answer": "$GITHUB_OUTPUT",
+     "rationale": "A step sets an output by writing `name=value` to `$GITHUB_OUTPUT`. `$GITHUB_ENV` sets an environment variable for later steps of the same job, and `$GITHUB_STEP_SUMMARY` writes the run summary."
+    },
+    "dep": {
+     "options": [
+      "if",
+      "needs",
+      "uses"
+     ],
+     "answer": "needs",
+     "rationale": "`needs` makes `implement` depend on `plan`, which orders the jobs and gives access to the outputs of `plan`."
+    },
+    "expr": {
+     "options": [
+      "env.plan",
+      "needs.plan.outputs.plan",
+      "steps.generate_plan.outputs.plan"
+     ],
+     "answer": "needs.plan.outputs.plan",
+     "rationale": "A dependent job reads a job output through the `needs` context. The `steps` context only reaches steps of the same job."
+    }
+   },
+   "explanation": "Data moves through a workflow in two stages. A step writes an output to `$GITHUB_OUTPUT`, and the job publishes it under `outputs`. Another job declares `needs` and reads the value from `needs.<job>.outputs.<name>`. Environment variables configure a job and aren't a substitute for this.",
+   "takeaway": "Step output → job `outputs` → `needs.<job>.outputs.<name>` in the dependent job.",
+   "evidence": [
+    {
+     "quote": "Step outputs pass values between steps in the same job.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+     "label": "Microsoft Learn · M2, unit 6"
+    },
+    {
+     "quote": "Job outputs pass values across jobs (through job dependencies).",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+     "label": "Microsoft Learn · M2, unit 6"
+    },
+    {
+     "quote": "Environment variables configure runtime behavior but shouldn't replace outputs for structured data flow.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+     "label": "Microsoft Learn · M2, unit 6"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+    "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/pass-job-outputs"
+   ]
+  },
+  {
+   "id": "x1-d5-conflict-types",
+   "type": "match",
+   "domain": "D5",
+   "module": "M4",
+   "unit": "U5",
+   "level": "understand",
+   "stem": "Several agents work in a GitHub repository named Repo1, and you are classifying the conflicts that occurred last month.\n\nWhich conflict type does each situation describe?",
+   "choices": [
+    {
+     "id": "textual",
+     "text": "Textual merge conflict"
+    },
+    {
+     "id": "semantic",
+     "text": "Semantic conflict"
+    },
+    {
+     "id": "policy",
+     "text": "Policy conflict"
+    },
+    {
+     "id": "duplicate",
+     "text": "Duplicate effort"
+    }
+   ],
+   "targets": [
+    {
+     "id": "t1",
+     "text": "Two pull requests merge cleanly, but the combined build fails because one renamed a method that the other calls.",
+     "answer": "semantic",
+     "rationale": "The merge is clean and the combined behavior is broken."
+    },
+    {
+     "id": "t2",
+     "text": "Two agents open separate pull requests that fix the same code scanning alert in different ways.",
+     "answer": "duplicate",
+     "rationale": "Two pull requests solve the same problem differently."
+    },
+    {
+     "id": "t3",
+     "text": "Two agents change the same lines of the same file in separate pull requests.",
+     "answer": "textual",
+     "rationale": "The same files and lines were changed."
+    },
+    {
+     "id": "t4",
+     "text": "One pull request changes application code and a workflow file, and the two areas require approval from different teams.",
+     "answer": "policy",
+     "rationale": "Protected areas require different reviews or approvals."
+    }
+   ],
+   "explanation": "Naming the type tells you which control detects it. A textual conflict is visible in the pull request. A semantic conflict is only caught by checks that build and test the combined result. A policy conflict is resolved by ownership routing, and duplicate effort by clear responsibilities for each agent.",
+   "takeaway": "Clean merge but broken result = semantic conflict. Only checks catch it.",
+   "evidence": [
+    {
+     "quote": "Textual merge conflicts (same files/lines changed).",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration",
+     "label": "Microsoft Learn · M4, unit 5"
+    },
+    {
+     "quote": "Semantic conflicts (clean merge, broken combined behavior).",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration",
+     "label": "Microsoft Learn · M4, unit 5"
+    },
+    {
+     "quote": "Policy conflicts (protected areas require different reviews/approvals).",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration",
+     "label": "Microsoft Learn · M4, unit 5"
+    },
+    {
+     "quote": "Duplicate effort (two PRs solving the same problem differently).",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration",
+     "label": "Microsoft Learn · M4, unit 5"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration"
+   ]
+  },
+  {
+   "id": "x1-d4-required-check-series",
+   "type": "yesno",
+   "domain": "D4",
+   "module": "M5",
+   "unit": "U5",
+   "level": "evaluate",
+   "scenario": "You have a GitHub repository named Repo1. The `main` branch has no rulesets and no branch protection rules. Agents open pull requests that target `main`. A workflow named `ci.yml` runs for every pull request that targets `main` and reports a check named `test`.\n\nYou need to ensure that a pull request cannot be merged into `main` unless the tests pass.",
+   "items": [
+    {
+     "id": "s1",
+     "solution": "You create a ruleset that targets `main` and requires a pull request with one approving review before merging.",
+     "answer": "no",
+     "explanation": "A reviewer can approve while `test` is failing. Nothing requires the check to pass."
+    },
+    {
+     "id": "s2",
+     "solution": "You create a ruleset that targets `main`, and you add `test` as a required status check.",
+     "answer": "yes",
+     "explanation": "The ruleset blocks the merge until `test` passes, whoever opened or approved the pull request."
+    },
+    {
+     "id": "s3",
+     "solution": "You create a branch protection rule for `main`, select **Require status checks to pass before merging**, and select the `test` check.",
+     "answer": "yes",
+     "explanation": "A branch protection rule with `test` selected as a required status check enforces the same gate as the ruleset."
+    }
+   ],
+   "explanation": "A check that runs is only information. It becomes a gate when it is selected as a required status check, in a ruleset or in a branch protection rule. Required reviews are a separate control: they gate on human approval, not on test results.",
+   "takeaway": "Tests gate a merge only as a required status check. Rulesets and branch protection can both do it.",
+   "evidence": [
+    {
+     "quote": "Required checks ensure that certain conditions must be met before a pull request can be merged.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
+     "label": "Microsoft Learn · M5, unit 5"
+    },
+    {
+     "quote": "When this workflow is configured as a required check (via rulesets or branch protection), a pull request can't be merged until the check passes.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/3-inputs-outputs-success-criteria",
+     "label": "Microsoft Learn · M2, unit 3"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/3-inputs-outputs-success-criteria",
+    "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets",
+    "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule"
+   ]
+  },
+  {
+   "id": "x1-d6-rubber-stamping",
+   "type": "single",
+   "domain": "D6",
+   "module": "M6",
+   "unit": "U7",
+   "level": "evaluate",
+   "stem": "In a GitHub organization named Org1, agents open about 60 pull requests each day. An audit shows that reviewers approve most of them in less than a minute, without opening the changes. The pull requests are large, and they contain no test or scan results.\n\nYou need to restore meaningful review without adding more approval steps. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Require three approving reviews instead of one for every pull request.",
+     "rationale": "Incorrect. More approvals of the same kind add friction and fatigue. Three quick clicks aren't a review."
+    },
+    {
+     "id": "b",
+     "text": "Add the reviewers to the bypass list of the ruleset so that merging is faster.",
+     "rationale": "Incorrect. A bypass list is a way around the policy, which is the opposite of oversight."
+    },
+    {
+     "id": "c",
+     "text": "Allow the agents to merge their own pull requests when all checks pass.",
+     "rationale": "Incorrect. That removes human judgment instead of restoring it."
+    },
+    {
+     "id": "d",
+     "text": "Require evidence in pull requests, route reviews by using CODEOWNERS, and keep pull requests small.",
+     "rationale": "Correct. Evidence makes review fast, CODEOWNERS sends each change to people who have the context, and small pull requests can actually be read."
+    }
+   ],
+   "answer": [
+    "d"
+   ],
+   "explanation": "This is rubber-stamping: approvals have become a click to unblock. The cause is governance fatigue, so the remedy is to make each review easier, not to add reviews. Require evidence such as tests and scans, route reviews through CODEOWNERS, and keep pull requests small and scoped.",
+   "takeaway": "Rubber-stamping → better evidence, CODEOWNERS routing, smaller pull requests.",
+   "evidence": [
+    {
+     "quote": "require evidence (tests, scans, artifacts) so review is fast",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/4-design-human-workflows",
+     "label": "Microsoft Learn · M6, unit 4"
+    },
+    {
+     "quote": "route reviews via CODEOWNERS so reviewers have context",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/4-design-human-workflows",
+     "label": "Microsoft Learn · M6, unit 4"
+    },
+    {
+     "quote": "keep PRs small and scoped",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/4-design-human-workflows",
+     "label": "Microsoft Learn · M6, unit 4"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/7-maintain-governance-operational-reliability",
+    "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/4-design-human-workflows"
+   ]
+  },
+  {
+   "id": "x1-d3-retention",
+   "type": "single",
+   "domain": "D3",
+   "module": "M5",
+   "unit": "U3",
+   "level": "apply",
+   "stem": "A private GitHub repository named Repo1 has a workflow that uploads test reports as workflow artifacts for an agent's pull requests. The repository uses the default retention setting, and the organization does not limit the retention period.\n\nAn auditor requires that every report uploaded from now on is available for 180 days after the run.\n\nYou need to meet the requirement. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Take no action. Artifacts are kept until someone deletes them.",
+     "rationale": "Incorrect. By default, artifacts and logs are deleted automatically after 90 days."
+    },
+    {
+     "id": "b",
+     "text": "Change the visibility of Repo1 to public, and then set the retention period to 180 days.",
+     "rationale": "Incorrect. A public repository allows a retention period of 1 to 90 days only."
+    },
+    {
+     "id": "c",
+     "text": "Add `retention-days: 180` to the upload step and keep the repository setting unchanged.",
+     "rationale": "Incorrect. The value on the step can't exceed the repository's retention limit, which is still 90 days."
+    },
+    {
+     "id": "d",
+     "text": "Change the artifact and log retention period of Repo1 to 180 days.",
+     "rationale": "Correct. A private repository accepts a retention period of 1 to 400 days, and the new period applies to artifacts created from now on."
+    }
+   ],
+   "answer": [
+    "d"
+   ],
+   "explanation": "Workflow artifacts are memory that expires. The default is 90 days. The period can be changed: up to 90 days for public repositories and up to 400 days for private ones. A change applies only to new artifacts, which is what the auditor asks for.",
+   "takeaway": "Default 90 days. Public: 1 to 90. Private: 1 to 400. Not retroactive.",
+   "evidence": [
+    {
+     "quote": "Public repositories typically allow 1-90 days, while private repositories can extend retention up to 400 days",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+     "label": "Microsoft Learn · M5, unit 3"
+    },
+    {
+     "quote": "By default, checks, workflow runs, commit statuses, and the artifacts and log files generated by workflows are retained for 90 days before they are automatically deleted.",
+     "source": "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository",
+     "label": "GitHub Docs"
+    },
+    {
+     "quote": "The `retention-days` value cannot exceed the retention limit set by the repository, organization, or enterprise.",
+     "source": "https://docs.github.com/en/actions/tutorials/store-and-share-data",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+    "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository",
+    "https://docs.github.com/en/actions/tutorials/store-and-share-data"
+   ]
+  },
+  {
+   "id": "x1-d2-approve-workflows",
+   "type": "single",
+   "domain": "D2",
+   "module": "M1",
+   "unit": "U4",
+   "level": "apply",
+   "stem": "GitHub Copilot cloud agent opens a pull request in a GitHub repository named Repo1. The repository uses the default settings for the agent. On the pull request, the CI workflow has not started.\n\nYou review the changes and find no problems. You need to run the CI workflow for the pull request. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Ask the agent to push an empty commit to the branch of the pull request.",
+     "rationale": "Incorrect. A new commit from the agent is held back in the same way."
+    },
+    {
+     "id": "b",
+     "text": "Close the pull request and reopen it.",
+     "rationale": "Incorrect. Reopening doesn't approve the runs. They still wait for a person."
+    },
+    {
+     "id": "c",
+     "text": "Add Copilot as a bypass actor in the ruleset for `main`.",
+     "rationale": "Incorrect. A ruleset bypass concerns branch rules. It has nothing to do with the approval of workflow runs."
+    },
+    {
+     "id": "d",
+     "text": "Select **Approve and run workflows** as a user who has write access.",
+     "rationale": "Correct. By default, workflows don't run on the agent's code until a user with write access has reviewed it and approves the runs."
+    }
+   ],
+   "answer": [
+    "d"
+   ],
+   "explanation": "Workflows can have access to secrets and to a token with write permissions, so code written by an agent is treated as untrusted until a person has looked at it. By default the runs wait for **Approve and run workflows**. The repository can be configured to run them automatically, which is a decision about risk.",
+   "takeaway": "CI not starting on an agent pull request → a user with write access must approve the runs.",
+   "evidence": [
+    {
+     "quote": "In some agent PR workflows, a human may need to explicitly approve running workflows (for example, an \"Approve and run workflows\" action). This is a built-in guardrail: it reduces the risk of privileged workflows running automatically for untrusted changes.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/4-describe-github-system-record-control-plane",
+     "label": "Microsoft Learn · M1, unit 4"
+    },
+    {
+     "note": "By default, workflows are not triggered until Copilot cloud agent's code is reviewed and a user with write access to the repository clicks the **Approve and run workflows** button. Optionally, you can configure Copilot to allow workflows to run automatically.",
+     "source": "https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/risks-and-mitigations",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/4-describe-github-system-record-control-plane",
+    "https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/risks-and-mitigations"
+   ]
+  },
+  {
+   "id": "x1-d1-critical-tier",
+   "type": "single",
+   "domain": "D1",
+   "module": "M2",
+   "unit": "U6",
+   "level": "apply",
+   "stem": "You are defining a risk-based autonomy model for an agent in a GitHub repository named Repo1. One class of tasks changes production deployment settings and uses production secrets.\n\nYou need to ensure that the agent cannot run the deployment itself, and that the production secrets are released to a job only after a person approves.\n\nWhich autonomy design should you apply to this class of tasks?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Automatic merge after the required checks pass",
+     "rationale": "Incorrect. That is the design for low-risk work such as documentation and formatting."
+    },
+    {
+     "id": "b",
+     "text": "A pull request with required checks and at least one review",
+     "rationale": "Incorrect. That is the design for medium-risk work. It gates the merge, not the deployment or the secrets."
+    },
+    {
+     "id": "c",
+     "text": "Environment approvals, where the agent prepares the change but cannot execute it",
+     "rationale": "Correct. A job that targets a protected environment waits for approval, and the environment's secrets aren't available before that."
+    },
+    {
+     "id": "d",
+     "text": "CODEOWNERS review with multiple reviews and stricter rulesets",
+     "rationale": "Incorrect. That is the design for high-risk paths such as `infra/`. It controls who approves a merge, not access to secrets."
+    }
+   ],
+   "answer": [
+    "c"
+   ],
+   "explanation": "Autonomy is designed per risk level. Critical work, such as production deployments and secrets, is controlled at the point of execution: the job targets an environment with required reviewers, so it pauses until a person approves, and only then can it read the environment's secrets. The agent prepares the change and can't carry it out.",
+   "takeaway": "Critical risk → environment approvals: the agent prepares, a person releases.",
+   "evidence": [
+    {
+     "quote": "If an environment is configured with required reviewers, a job targeting that environment will pause until approval is granted.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+     "label": "Microsoft Learn · M2, unit 6"
+    },
+    {
+     "quote": "This design allows the agent to prepare changes while preventing it from executing production-impacting actions independently.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+     "label": "Microsoft Learn · M2, unit 6"
+    },
+    {
+     "quote": "Secrets stored in an environment are only available to workflow jobs that reference the environment. If the environment requires approval, a job cannot access environment secrets until one of the required reviewers approves it.",
+     "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+    "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments"
+   ]
+  },
+  {
+   "id": "x1-d5-merge-validation",
+   "type": "single",
+   "domain": "D5",
+   "module": "M4",
+   "unit": "U5",
+   "level": "apply",
+   "stem": "A GitHub repository named Repo1 receives pull requests from several agents. Conflicts between the pull requests and the `main` branch are often discovered late, after reviewers have already approved the changes.\n\nYou need to ensure that a conflict with `main` is detected automatically each time an agent updates a pull request, and that the result is enforced before merging. The solution must not depend on reviewers noticing the conflict.\n\nWhat should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Add a job that runs `git merge --no-commit origin/main`, and make it a required status check.",
+     "rationale": "Correct. The job fails when the branch can't be merged, and as a required check it blocks the merge without anyone having to notice."
+    },
+    {
+     "id": "b",
+     "text": "Add a CODEOWNERS entry that assigns all files in the repository to the core team.",
+     "rationale": "Incorrect. CODEOWNERS routes review requests. It doesn't test whether the branch merges with `main`."
+    },
+    {
+     "id": "c",
+     "text": "Add `cancel-in-progress: true` to the `concurrency` block of the CI workflow.",
+     "rationale": "Incorrect. That cancels outdated runs. It reports nothing about conflicts."
+    },
+    {
+     "id": "d",
+     "text": "Add a section named Conflicts to the pull request template that agents must complete.",
+     "rationale": "Incorrect. A template section is a reminder for people, which is exactly what the solution must not depend on."
+    }
+   ],
+   "answer": [
+    "a"
+   ],
+   "explanation": "A merge validation step turns a conflict into a failed check as soon as the branch is updated. Making that check required is what makes it enforceable: the pull request can't merge until the check passes, whoever reviews it.",
+   "takeaway": "Detect conflicts with a check, then make the check required.",
+   "evidence": [
+    {
+     "quote": "GitHub PRs show merge conflicts, but teams often add a merge validation step so conflicts fail fast as checks:",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration",
+     "label": "Microsoft Learn · M4, unit 5"
+    },
+    {
+     "quote": "If this is a required check, conflicts become enforceable and don’t depend on reviewers noticing them manually.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration",
+     "label": "Microsoft Learn · M4, unit 5"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration"
+   ]
+  },
+  {
+   "id": "x1-d4-skipped-check",
+   "type": "single",
+   "domain": "D4",
+   "module": "M5",
+   "unit": "U5",
+   "level": "analyse",
+   "stem": "A GitHub repository named Repo1 has a ruleset that requires a status check named `integration-tests` before merging into `main`. The check is reported by a job in a workflow that runs on `pull_request`. To save runner time, a developer adds the following line to the job.\n\n```yaml\nif: contains(github.event.pull_request.labels.*.name, 'run-integration')\n```\n\nAn agent opens a pull request that does not have the label. The job is skipped, and the pull request is merged.\n\nYou need to explain why the required check did not block the merge. What is the cause?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Required status checks are not evaluated for pull requests that agents open.",
+     "rationale": "Incorrect. Required checks apply to every pull request that targets the branch, whoever opens it."
+    },
+    {
+     "id": "b",
+     "text": "A required check that is never reported is treated as passed.",
+     "rationale": "Incorrect. A check that isn't reported stays pending, and a pending required check blocks the merge."
+    },
+    {
+     "id": "c",
+     "text": "A job that is skipped by a condition reports its status as Success.",
+     "rationale": "Correct. A skipped job counts as successful, so the required check is satisfied without any test having run."
+    },
+    {
+     "id": "d",
+     "text": "A ruleset is bypassed when a pull request has no labels.",
+     "rationale": "Incorrect. Labels have no effect on whether a ruleset applies."
+    }
+   ],
+   "answer": [
+    "c"
+   ],
+   "explanation": "The two cases behave in opposite ways. A job skipped by an `if` condition reports Success and doesn't block the merge, even as a required check. A workflow that is skipped entirely, for example by a path or branch filter, leaves the check pending, and that blocks the merge. An evaluation signal is only as good as the guarantee that it actually ran.",
+   "takeaway": "Skipped job = Success. Skipped workflow = Pending, which blocks.",
+   "evidence": [
+    {
+     "quote": "Whether workflow checks are failing or missing",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+     "label": "Microsoft Learn · M5, unit 3"
+    },
+    {
+     "quote": "A job that is skipped will report its status as \"Success\". It will not prevent a pull request from merging, even if it is a required check.",
+     "source": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+    "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions",
+    "https://docs.github.com/en/pull-requests/reference/status-checks"
+   ]
+  },
+  {
+   "id": "x1-d6-cli-tool-scope",
+   "type": "multiple",
+   "domain": "D6",
+   "module": "M6",
+   "unit": "U2",
+   "level": "apply",
+   "select": 2,
+   "stem": "You run GitHub Copilot CLI from a script by using the following command.\n\n```bash\ncopilot -p \"Summarize the last 10 commits and highlight breaking changes.\"\n```\n\nThe command has the following requirements:\n\n- Copilot must be able to run `git` commands without asking for approval.\n- Copilot must never run `git push`.\n- No other tool may be approved automatically.\n\nYou need to meet the requirements. Which two options should you add to the command? Each correct answer presents part of the solution.\n\nNOTE: Each correct selection is worth one point.",
+   "options": [
+    {
+     "id": "a",
+     "text": "`--allow-tool='shell(git)'`",
+     "rationale": "Correct. This approves `git` commands only, so every other tool still needs approval."
+    },
+    {
+     "id": "b",
+     "text": "`--allow-all-tools`",
+     "rationale": "Incorrect. This approves every tool, including file edits and any shell command."
+    },
+    {
+     "id": "c",
+     "text": "`--deny-tool='shell(git push)'`",
+     "rationale": "Correct. A deny rule takes precedence over allow rules, so `git push` is blocked although `git` is allowed."
+    },
+    {
+     "id": "d",
+     "text": "`--allow-tool='write'`",
+     "rationale": "Incorrect. This approves tools that modify files, which the task doesn't need."
+    },
+    {
+     "id": "e",
+     "text": "`--allow-tool='shell'`",
+     "rationale": "Incorrect. Without a command in parentheses, this approves every shell command."
+    }
+   ],
+   "answer": [
+    "a",
+    "c"
+   ],
+   "explanation": "For a terminal-based agent, tool access is the governance boundary. Allow exactly what the task needs, here the `git` command, and deny the one subcommand that has consequences. Because `--deny-tool` takes precedence over `--allow-tool`, the two options combine safely.",
+   "takeaway": "Allow narrowly with `--allow-tool='shell(COMMAND)'`. `--deny-tool` wins over any allow.",
+   "evidence": [
+    {
+     "quote": "Decision guidance: Match tool access to consequence. Low-risk tasks shouldn't inherit high-risk capabilities.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    },
+    {
+     "quote": "This pattern helps you support read-only analysis (like commit summarization) without granting broad write capability or auto-approving unrelated tools.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    },
+    {
+     "quote": "This option takes precedence over the `--allow-all-tools` and `--allow-tool` options.",
+     "source": "https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-cli",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+    "https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-cli"
+   ]
+  },
+  {
+   "id": "x1-d3-continuity-statements",
+   "type": "statements",
+   "domain": "D3",
+   "module": "M5",
+   "unit": "U4",
+   "level": "understand",
+   "stem": "An agent works on the same task from an IDE, from the CLI, and in a GitHub-hosted environment.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.\n\nNOTE: Each correct selection is worth one point.",
+   "items": [
+    {
+     "id": "s1",
+     "statement": "Referring to the pull request number, the branch name, and commit SHAs allows each tool to retrieve the same state without transferring session context.",
+     "answer": "yes",
+     "explanation": "These are durable references. Every environment can resolve them against the same repository data."
+    },
+    {
+     "id": "s2",
+     "statement": "A pull request branch that is behind its base branch is a source of stale context.",
+     "answer": "yes",
+     "explanation": "The work is based on code that is no longer current, so earlier results may no longer be valid."
+    },
+    {
+     "id": "s3",
+     "statement": "Restating the acceptance criteria in the prompt of each tool prevents conflicting context.",
+     "answer": "no",
+     "explanation": "Copies are what cause conflicting context. Keep the criteria in the issue or pull request and update them there."
+    }
+   ],
+   "explanation": "Continuity across tools comes from durable references and a single source of truth, not from copying context. Conflicting context is the same information in several places with different values. Stale context is outdated information used during execution.",
+   "takeaway": "Share references, not copies. One source per type of information.",
+   "evidence": [
+    {
+     "quote": "Agent state should be shared using durable references, not copied context.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity",
+     "label": "Microsoft Learn · M5, unit 4"
+    },
+    {
+     "quote": "Don't redefine acceptance criteria in multiple prompts",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity",
+     "label": "Microsoft Learn · M5, unit 4"
+    },
+    {
+     "quote": "A pull request is outdated compared to the base branch",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity",
+     "label": "Microsoft Learn · M5, unit 4"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity"
+   ]
+  },
+  {
+   "id": "x1-d2-hook-events",
+   "type": "match",
+   "domain": "D2",
+   "module": "M2",
+   "unit": "U7",
+   "level": "apply",
+   "stem": "You are adding repository hooks for GitHub Copilot CLI in `.github/hooks/`.\n\nWhich hook should you use for each requirement?",
+   "choices": [
+    {
+     "id": "pre",
+     "text": "`preToolUse`"
+    },
+    {
+     "id": "post",
+     "text": "`postToolUse`"
+    },
+    {
+     "id": "err",
+     "text": "`errorOccurred`"
+    },
+    {
+     "id": "start",
+     "text": "`sessionStart`"
+    }
+   ],
+   "targets": [
+    {
+     "id": "t1",
+     "text": "Record the result of every tool call for an audit trail.",
+     "answer": "post",
+     "rationale": "`postToolUse` runs after a tool completes, whether it succeeded or failed, so it can log the result."
+    },
+    {
+     "id": "t2",
+     "text": "Send an alert when the agent's run fails with an error.",
+     "answer": "err",
+     "rationale": "`errorOccurred` runs when an error occurs during agent execution."
+    },
+    {
+     "id": "t3",
+     "text": "Block a shell command that matches a destructive pattern before it runs.",
+     "answer": "pre",
+     "rationale": "`preToolUse` runs before the agent uses a tool, and it can approve or deny the execution."
+    },
+    {
+     "id": "t4",
+     "text": "Write an audit record when a new agent session begins.",
+     "answer": "start",
+     "rationale": "`sessionStart` runs when a session begins or is resumed."
+    }
+   ],
+   "explanation": "A hook runs code at a fixed point of the agent's execution, independently of the model. Only a hook that runs before the tool call can stop it, which makes `preToolUse` the enforcement point. The hooks that run afterwards observe: they log results, report errors and record sessions.",
+   "takeaway": "Block with `preToolUse`. Log with `postToolUse`. Alert with `errorOccurred`.",
+   "evidence": [
+    {
+     "quote": "Pre-action hooks Validate or block unsafe actions before execution",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+     "label": "Microsoft Learn · M2, unit 7"
+    },
+    {
+     "quote": "Post-action hooks Log tool usage, outputs, or decisions for auditing",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+     "label": "Microsoft Learn · M2, unit 7"
+    },
+    {
+     "quote": "Error hooks Capture failures and trigger escalation or alerting",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+     "label": "Microsoft Learn · M2, unit 7"
+    },
+    {
+     "note": "Hook events include `sessionStart` (a session begins or is resumed), `preToolUse` (before the agent uses any tool; it can approve or deny tool executions), `postToolUse` (after a tool completes, whether successful or failed) and `errorOccurred` (an error occurs during agent execution). Repository hooks are defined in `.github/hooks/*.json`.",
+     "source": "https://docs.github.com/en/copilot/concepts/customizations/hooks",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+    "https://docs.github.com/en/copilot/concepts/customizations/hooks"
+   ]
+  },
+  {
+   "id": "x1-d1-evidence",
+   "type": "multiple",
+   "domain": "D1",
+   "module": "M2",
+   "unit": "U7",
+   "level": "apply",
+   "select": 2,
+   "stem": "An agent's pull request in a GitHub repository named Repo1 passes all checks and is merged. One week later, an auditor asks which workflow run produced the test report and against which commit. The report was written only to the job log.\n\nYou need to make the evidence durable and traceable for future pull requests. Which two actions should you perform? Each correct answer presents part of the solution.\n\nNOTE: Each correct selection is worth one point.",
+   "options": [
+    {
+     "id": "a",
+     "text": "Upload the test report as a workflow artifact.",
+     "rationale": "Correct. An artifact keeps the report as a file that belongs to the run, instead of text inside a log."
+    },
+    {
+     "id": "b",
+     "text": "Link the workflow run and its artifacts in an Evidence section of the pull request.",
+     "rationale": "Correct. The link ties the evidence to a specific run, and the run is tied to a specific commit."
+    },
+    {
+     "id": "c",
+     "text": "Commit the generated test report to the pull request branch.",
+     "rationale": "Incorrect. Generated files don't belong in the repository. Artifacts keep outputs inspectable without committing them."
+    },
+    {
+     "id": "d",
+     "text": "Ask the agent to summarize the test results in a pull request comment.",
+     "rationale": "Incorrect. A summary is the agent's account of the results, not the evidence itself."
+    },
+    {
+     "id": "e",
+     "text": "Increase the level of detail of the job log.",
+     "rationale": "Incorrect. More log text doesn't make the report a durable file or link it to the pull request."
+    }
+   ],
+   "answer": [
+    "a",
+    "b"
+   ],
+   "explanation": "Observability means that every meaningful action leaves an artifact that someone can inspect later. Uploading the report makes it durable, and linking the run and the artifact from the pull request makes it traceable: which run produced it, and against which code state.",
+   "takeaway": "Upload evidence as artifacts, and link the run from the pull request.",
+   "evidence": [
+    {
+     "quote": "Uploading artifacts makes evidence durable and reviewable, even when logs scroll away.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+     "label": "Microsoft Learn · M2, unit 7"
+    },
+    {
+     "quote": "Evidence should be traceable to a specific workflow run and a specific commit.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+     "label": "Microsoft Learn · M2, unit 7"
+    },
+    {
+     "quote": "This keeps outputs inspectable and usable without committing generated files back to the repo.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+     "label": "Microsoft Learn · M2, unit 7"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls"
+   ]
+  },
+  {
+   "id": "x1-d5-artifact-audit",
+   "type": "single",
+   "domain": "D5",
+   "module": "M4",
+   "unit": "U6",
+   "level": "apply",
+   "stem": "A GitHub organization named Org1 runs an agent workflow that uploads an artifact named `agent-report` on every run. During an incident review, you discover that the artifact is missing from a run that finished two days ago. The repository uses the default retention period for artifacts.\n\nYou need to identify who deleted the artifact and when. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Re-run the workflow and compare the new artifact with the job log.",
+     "rationale": "Incorrect. A re-run produces a new artifact. It doesn't show who removed the earlier one."
+    },
+    {
+     "id": "b",
+     "text": "Review the timeline of the pull request that triggered the run.",
+     "rationale": "Incorrect. The pull request timeline records commits, reviews and checks. It doesn't record artifact deletions."
+    },
+    {
+     "id": "c",
+     "text": "Search the organization audit log for `action:artifact.destroy`.",
+     "rationale": "Correct. The audit log records the manual deletion of a workflow artifact, with the actor, the time and the repository."
+    },
+    {
+     "id": "d",
+     "text": "Run `gh agent-task view --log --follow` for the agent session.",
+     "rationale": "Incorrect. That command streams the log of an agent session. It doesn't cover what happened to an artifact afterwards."
+    }
+   ],
+   "answer": [
+    "c"
+   ],
+   "explanation": "With the default retention period, an artifact from two days ago hasn't expired, so someone deleted it. Deletions of workflow artifacts are written to the organization audit log as `artifact.destroy`, which answers who and when.",
+   "takeaway": "Missing artifact before it could expire → audit log, `action:artifact.destroy`.",
+   "evidence": [
+    {
+     "quote": "If workflow artifacts (output files) are unexpectedly missing, GitHub audit logging reveals deletions.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/6-system-observability-evidence-workflows",
+     "label": "Microsoft Learn · M4, unit 6"
+    },
+    {
+     "quote": "This event shows who deleted an artifact, when, and the affected repository.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/6-system-observability-evidence-workflows",
+     "label": "Microsoft Learn · M4, unit 6"
+    },
+    {
+     "note": "The organization audit log lists the event `artifact.destroy`: \"A workflow run artifact was manually deleted.\" By default, artifacts and logs are retained for 90 days.",
+     "source": "https://docs.github.com/en/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/6-system-observability-evidence-workflows",
+    "https://docs.github.com/en/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization",
+    "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository"
+   ]
+  },
+  {
+   "id": "x1-d4-evaluation-statements",
+   "type": "statements",
+   "domain": "D4",
+   "module": "M5",
+   "unit": "U5",
+   "level": "understand",
+   "stem": "You are defining how the work of agents is evaluated in a GitHub repository named Repo1.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.\n\nNOTE: Each correct selection is worth one point.",
+   "items": [
+    {
+     "id": "s1",
+     "statement": "A passing build proves that an agent's change is complete and low risk.",
+     "answer": "no",
+     "explanation": "Checks validate only what they were designed to detect. A passing build says nothing about what isn't tested."
+    },
+    {
+     "id": "s2",
+     "statement": "Acceptance criteria that are written in the issue give both the agent and the reviewer a basis for verifying completion.",
+     "answer": "yes",
+     "explanation": "Clear criteria in the issue are the reference for both of them."
+    },
+    {
+     "id": "s3",
+     "statement": "Selecting a check as a required status check prevents a pull request from being merged until the check passes.",
+     "answer": "yes",
+     "explanation": "That is what a required status check enforces."
+    }
+   ],
+   "explanation": "Evaluation starts from success criteria written in the issue, uses the signals that the pull request shows, and becomes enforceable when checks are required. No single signal is proof of completeness, which is why checks are combined with review.",
+   "takeaway": "Criteria in the issue, signals in the pull request, enforcement through required checks.",
+   "evidence": [
+    {
+     "quote": "A passing build does not automatically mean the change is complete, appropriate, or low risk.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/5-identify-risks-traceability",
+     "label": "Microsoft Learn · M1, unit 5"
+    },
+    {
+     "quote": "Clear criteria allow both the agent and the reviewer to verify completion.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
+     "label": "Microsoft Learn · M5, unit 5"
+    },
+    {
+     "quote": "Required checks ensure that certain conditions must be met before a pull request can be merged.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
+     "label": "Microsoft Learn · M5, unit 5"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
+    "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/5-identify-risks-traceability"
+   ]
+  },
+  {
+   "id": "x1-d6-progressive-autonomy",
+   "type": "build",
+   "domain": "D6",
+   "module": "M6",
+   "unit": "U2",
+   "level": "apply",
+   "stem": "Your team plans to increase the autonomy of an agent step by step as the agent proves reliable.\n\nWhich four actions should you perform in sequence?",
+   "items": [
+    {
+     "id": "p1",
+     "text": "Allow the agent to open pull requests but not to merge them."
+    },
+    {
+     "id": "p2",
+     "text": "Allow the agent to merge low-risk pull requests after the checks pass."
+    },
+    {
+     "id": "p3",
+     "text": "Allow the agent to deploy to staging automatically."
+    },
+    {
+     "id": "p4",
+     "text": "Allow the agent to deploy to production only through an environment approval."
+    },
+    {
+     "id": "x1",
+     "text": "Allow the agent to push low-risk changes directly to the default branch."
+    },
+    {
+     "id": "x2",
+     "text": "Remove the required status checks for pull requests that the agent opens."
+    }
+   ],
+   "answer": [
+    "p1",
+    "p2",
+    "p3",
+    "p4"
+   ],
+   "explanation": "Progressive autonomy starts with strict controls and relaxes them as the agent earns trust: first proposals only, then merging low-risk changes, then automatic deployment to staging, and production only behind an environment approval. At no stage does the agent get a way around pull requests or checks.",
+   "takeaway": "Open pull requests → merge low risk → deploy to staging → production with approval.",
+   "evidence": [
+    {
+     "quote": "Phase 1: agent can only open PRs, can't merge",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    },
+    {
+     "quote": "Phase 2: agent can merge low-risk PRs after checks",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    },
+    {
+     "quote": "Phase 3: agent can deploy to staging automatically",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    },
+    {
+     "quote": "Phase 4: agent can deploy to production only through environment approval",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
+     "label": "Microsoft Learn · M6, unit 2"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy"
+   ]
+  },
+  {
+   "id": "x1-d3-reset",
+   "type": "single",
+   "domain": "D3",
+   "module": "M5",
+   "unit": "U3",
+   "level": "apply",
+   "stem": "An agent has an open pull request that implements a caching layer described in an issue. The product owner rewrites the issue: caching is no longer wanted, and the same performance problem must be solved by reducing the number of database queries.\n\nYou need to prevent the agent from carrying its earlier assumptions into the new work. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Add the new requirement to the agent's next prompt and leave the pull request unchanged.",
+     "rationale": "Incorrect. The pull request would still describe the caching plan, so the agent would have two conflicting sources."
+    },
+    {
+     "id": "b",
+     "text": "Rewrite the pull request description to state the new direction before the agent continues.",
+     "rationale": "Correct. This is a reset: the recorded plan is replaced, so the agent re-anchors to the new approach."
+    },
+    {
+     "id": "c",
+     "text": "Delete the workflow artifacts that the earlier runs produced.",
+     "rationale": "Incorrect. That is pruning. It removes old outputs but leaves the caching plan in the pull request."
+    },
+    {
+     "id": "d",
+     "text": "Add a comment that summarizes the caching work and continue with the existing plan.",
+     "rationale": "Incorrect. Summarizing keeps the history readable. It doesn't replace a plan that is no longer valid."
+    }
+   ],
+   "answer": [
+    "b"
+   ],
+   "explanation": "When requirements change significantly or a new approach is chosen, memory must be reset so that old assumptions aren't carried over. In practice you update or rewrite the pull request description, or close the pull request and create a new one, and document the new direction before work continues.",
+   "takeaway": "Requirements changed → reset: rewrite the description or recreate the pull request.",
+   "evidence": [
+    {
+     "quote": "Requirements in the issue change significantly",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+     "label": "Microsoft Learn · M5, unit 3"
+    },
+    {
+     "quote": "Update or rewrite the pull request description",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+     "label": "Microsoft Learn · M5, unit 3"
+    },
+    {
+     "quote": "Clearly document the new direction before continuing",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
+     "label": "Microsoft Learn · M5, unit 3"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift"
+   ]
+  },
+  {
+   "id": "x1-d2-cloud-agent-statements",
+   "type": "statements",
+   "domain": "D2",
+   "module": "M3",
+   "unit": "U5",
+   "level": "understand",
+   "stem": "GitHub Copilot cloud agent is enabled for a GitHub repository named Repo1 with the default settings. A ruleset for `main` requires one approving review.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.\n\nNOTE: Each correct selection is worth one point.",
+   "items": [
+    {
+     "id": "s1",
+     "statement": "The agent's changes are pushed to a separate branch and not directly to the default branch.",
+     "answer": "yes",
+     "explanation": "The agent works on its own branch, so every change is isolated until it has been reviewed."
+    },
+    {
+     "id": "s2",
+     "statement": "The user who asked the agent to create a pull request can provide the required approval for that pull request.",
+     "answer": "no",
+     "explanation": "That user is prevented from approving it, so that the required approval comes from someone else."
+    },
+    {
+     "id": "s3",
+     "statement": "The agent's firewall restricts the network access of every MCP server that is configured for the repository.",
+     "answer": "no",
+     "explanation": "The firewall covers processes that the agent starts through its Bash tool. It doesn't apply directly to the MCP servers that you configure."
+    }
+   ],
+   "explanation": "The cloud agent runs inside built-in limits: it pushes only to its own branch, it can't approve or merge, and the person who started the task can't approve the result. Its firewall limits internet access for the commands that the agent runs, but its coverage is partial, so it isn't a complete security boundary.",
+   "takeaway": "Own branch, no self-approval, no approval by the requester. The firewall doesn't cover your MCP servers.",
+   "evidence": [
+    {
+     "quote": "Its changes are made on a separate branch, not directly on the default branch such as main.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+     "label": "Microsoft Learn · M3, unit 5"
+    },
+    {
+     "note": "GitHub prevents the user who asked Copilot cloud agent to create a pull request from approving it, which maintains the expected controls of the required approvals rule and branch protection.",
+     "source": "https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/risks-and-mitigations",
+     "label": "GitHub Docs"
+    },
+    {
+     "note": "The firewall applies to processes started by the agent through its Bash tool. It does not apply directly to other MCP servers.",
+     "source": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-the-firewall",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+    "https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/risks-and-mitigations",
+    "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-the-firewall"
+   ]
+  },
+  {
+   "id": "x1-d1-plan-first-sequence",
+   "type": "build",
+   "domain": "D1",
+   "module": "M2",
+   "unit": "U4",
+   "level": "apply",
+   "stem": "You are implementing a plan-first workflow for high-risk changes that an agent makes in a GitHub repository named Repo1.\n\nWhich four actions should be performed in sequence?",
+   "items": [
+    {
+     "id": "gen",
+     "text": "A plan is generated for the task, for example by assigning the issue to the agent."
+    },
+    {
+     "id": "pr",
+     "text": "The agent opens a pull request that contains only the plan."
+    },
+    {
+     "id": "approve",
+     "text": "The reviewers discuss, refine, and approve the plan in the pull request."
+    },
+    {
+     "id": "impl",
+     "text": "The agent implements the plan in follow-up commits or in a new pull request."
+    },
+    {
+     "id": "both",
+     "text": "The agent opens a pull request that contains the plan and the initial code changes."
+    },
+    {
+     "id": "self",
+     "text": "The agent approves the plan and merges the pull request."
+    }
+   ],
+   "answer": [
+    "gen",
+    "pr",
+    "approve",
+    "impl"
+   ],
+   "explanation": "In a plan-first workflow, the plan is complete and approved before any code is introduced: generate the plan, open a pull request with only the plan, let the reviewers approve it, and only then implement. A pull request that already contains code is the plan and execution workflow.",
+   "takeaway": "Plan → plan-only pull request → approval → implementation.",
+   "evidence": [
+    {
+     "quote": "Reviewers discuss, refine, and approve the plan directly in the PR.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution",
+     "label": "Microsoft Learn · M2, unit 4"
+    },
+    {
+     "quote": "After approval, the agent proceeds to implement the plan in follow-up commits or a new PR.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution",
+     "label": "Microsoft Learn · M2, unit 4"
+    },
+    {
+     "quote": "Human validation happens before any code is written.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution",
+     "label": "Microsoft Learn · M2, unit 4"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution"
+   ]
+  },
+  {
+   "id": "x1-d5-subagent-frontmatter",
+   "type": "multiple",
+   "domain": "D5",
+   "module": "M4",
+   "unit": "U7",
+   "level": "analyse",
+   "select": 2,
+   "stem": "You are designing a planner agent that delegates work to an implementer agent. The profile of the implementer agent starts with the following frontmatter.\n\n```yaml\n---\nname: implementer\ndisable-model-invocation: true\nuser-invocable: true\n---\n```\n\nThe design has the following requirements:\n\n- The planner must be able to invoke the implementer as a subagent.\n- Users must not be able to select the implementer directly.\n\nYou need to meet the requirements. Which two changes should you make to the frontmatter of the implementer agent? Each correct answer presents part of the solution.\n\nNOTE: Each correct selection is worth one point.",
+   "options": [
+    {
+     "id": "a",
+     "text": "Set `disable-model-invocation` to `false`.",
+     "rationale": "Correct. While the value is `true`, the agent can't be invoked as a subagent, so the planner's delegation fails."
+    },
+    {
+     "id": "b",
+     "text": "Set `user-invocable` to `false`.",
+     "rationale": "Correct. With `false`, users can't select the agent, and it can only be reached programmatically."
+    },
+    {
+     "id": "c",
+     "text": "Add `agents: [planner]`.",
+     "rationale": "Incorrect. `agents` lists the subagents that an agent may orchestrate. It belongs in the planner's frontmatter and names the implementer."
+    },
+    {
+     "id": "d",
+     "text": "Remove the `name` property.",
+     "rationale": "Incorrect. The name is how a handoff finds the agent. Removing it doesn't change who may invoke the agent."
+    }
+   ],
+   "answer": [
+    "a",
+    "b"
+   ],
+   "explanation": "Two properties control who can start a custom agent. `disable-model-invocation: true` stops other agents from invoking it, which breaks orchestration. `user-invocable: false` hides it from users. The design needs the opposite of the current values for both.",
+   "takeaway": "Subagent only: `disable-model-invocation: false` and `user-invocable: false`.",
+   "evidence": [
+    {
+     "quote": "A `disable-model-invocation: true` agent cannot be called as a subagent, which can cause orchestration failures.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/7-scale-failure-recovery",
+     "label": "Microsoft Learn · M4, unit 7"
+    },
+    {
+     "quote": "`agents`: lists allowed subagents for this agent to orchestrate",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/7-scale-failure-recovery",
+     "label": "Microsoft Learn · M4, unit 7"
+    },
+    {
+     "note": "`user-invocable` controls whether a custom agent can be selected by a user. When it is `false`, the agent can't be selected manually and can only be accessed programmatically. `disable-model-invocation: true` means the agent is not used automatically and must be selected manually.",
+     "source": "https://docs.github.com/en/copilot/reference/custom-agents-configuration",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/7-scale-failure-recovery",
+    "https://docs.github.com/en/copilot/reference/custom-agents-configuration"
+   ]
+  },
+  {
+   "id": "x1-d4-trigger-fix",
+   "type": "single",
+   "domain": "D4",
+   "module": "M5",
+   "unit": "U6",
+   "level": "analyse",
+   "stem": "Agents in a GitHub repository named Repo1 open pull requests that break the build after they are merged, but no failed checks appear on the pull requests. You review the evidence. The acceptance criteria are clear, the agents' plans match the issues, and the validation workflow starts with the following trigger.\n\n```yaml\non:\n  push:\n    branches: [main]\n```\n\nYou need to correct the root cause so that the failures are detected before merging. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Add more detailed acceptance criteria to each issue.",
+     "rationale": "Incorrect. The criteria are clear and the plans match them, so this isn't a reasoning error."
+    },
+    {
+     "id": "b",
+     "text": "Add a `pull_request` trigger for `main` to the validation workflow.",
+     "rationale": "Correct. The workflow only runs after a push to `main`, which is after the merge. A `pull_request` trigger makes it report on the pull request."
+    },
+    {
+     "id": "c",
+     "text": "Rewrite the pull request descriptions to remove outdated decisions.",
+     "rationale": "Incorrect. Nothing indicates stale or conflicting context."
+    },
+    {
+     "id": "d",
+     "text": "Add the validation command to the repository instructions file.",
+     "rationale": "Incorrect. An instruction asks the agent to validate. It doesn't make a check appear on the pull request."
+    }
+   ],
+   "answer": [
+    "b"
+   ],
+   "explanation": "The evidence rules out reasoning and context, so the cause is tool misuse: the workflow is triggered by the wrong event. The matching improvement is in tool configuration, where you make sure that workflows trigger on the correct events.",
+   "takeaway": "No checks on the pull request → look at the workflow's `on:` before blaming the agent.",
+   "evidence": [
+    {
+     "quote": "Failing to trigger or use workflows properly",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+     "label": "Microsoft Learn · M5, unit 6"
+    },
+    {
+     "quote": "Ensure workflows trigger on the correct events (push, pull_request)",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+     "label": "Microsoft Learn · M5, unit 6"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
+    "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows"
+   ]
+  },
+  {
+   "id": "x1-d6-governance-statements",
+   "type": "statements",
+   "domain": "D6",
+   "module": "M6",
+   "unit": "U4",
+   "level": "understand",
+   "stem": "You are designing governance for agents in a GitHub organization named Org1.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.\n\nNOTE: Each correct selection is worth one point.",
+   "items": [
+    {
+     "id": "s1",
+     "statement": "A banner that warns about dangerous commands prevents an agent from running them.",
+     "answer": "no",
+     "explanation": "Banners and logging inform. Only an enforceable control, such as a hook that denies the command, prevents execution."
+    },
+    {
+     "id": "s2",
+     "statement": "To keep oversight effective, human approval should be required at every step of a workflow, including analysis and routine checks.",
+     "answer": "no",
+     "explanation": "Oversight belongs at decision points such as merge, deployment and access to secrets. Approvals at every step slow the work and cause fatigue."
+    },
+    {
+     "id": "s3",
+     "statement": "A policy that exists only in documentation and is not enforced by the platform can be bypassed.",
+     "answer": "yes",
+     "explanation": "A control that the platform doesn't enforce depends on everyone following it, so it will be skipped."
+    }
+   ],
+   "explanation": "Human-in-the-loop design puts people at the few decisions that matter and automates the rest. Enforcement has to be technical: a hook that blocks, a ruleset, an environment. Documentation, logs and warnings support those controls but don't replace them.",
+   "takeaway": "People at decision points. Enforcement by the platform, not by documentation.",
+   "evidence": [
+    {
+     "quote": "Put humans at decision points (merge, deploy, secret access), not at every step (analysis, formatting, routine checks).",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/4-design-human-workflows",
+     "label": "Microsoft Learn · M6, unit 4"
+    },
+    {
+     "quote": "Decision guidance: Use enforceable hooks for blocking. Logging and banners are helpful, but they don't prevent execution.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/3-enforce-governance-github-controls",
+     "label": "Microsoft Learn · M6, unit 3"
+    },
+    {
+     "quote": "\"Controls in docs only\" is an anti-pattern. If the platform can't enforce it, it will be bypassed.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/3-enforce-governance-github-controls",
+     "label": "Microsoft Learn · M6, unit 3"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/4-design-human-workflows",
+    "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/3-enforce-governance-github-controls"
+   ]
+  },
+  {
+   "id": "x1-d3-memory-vs-instructions",
+   "type": "single",
+   "domain": "D3",
+   "module": "M5",
+   "unit": "U2",
+   "level": "apply",
+   "stem": "Copilot Memory holds a repository-level fact for a GitHub repository named Repo1: code must be formatted with `dotnet format` before each commit. In some sessions, GitHub Copilot cloud agent commits code without formatting it.\n\nYou need to ensure that the formatting rule is provided to the agent consistently in every session. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Add the rule to the custom instructions of the repository.",
+     "rationale": "Correct. Custom instructions are given to the agent in every session. A stored fact is only used when Copilot judges it relevant and still accurate."
+    },
+    {
+     "id": "b",
+     "text": "Ask Copilot to store the rule again as a user-level preference.",
+     "rationale": "Incorrect. A user-level preference describes how one person likes to work, and it is still a memory, not a guaranteed rule."
+    },
+    {
+     "id": "c",
+     "text": "Increase the expiry period of repository-level facts.",
+     "rationale": "Incorrect. The expiry period decides how long a fact is kept without reinforcement. It doesn't make Copilot apply the fact."
+    },
+    {
+     "id": "d",
+     "text": "Delete the fact so that Copilot learns it again from the codebase.",
+     "rationale": "Incorrect. A newly learned fact has the same status as the old one: Copilot may use it, with no guarantee."
+    }
+   ],
+   "answer": [
+    "a"
+   ],
+   "explanation": "Long-term memory is curated knowledge that the agent may reuse. Before Copilot uses a repository-level fact, it checks the fact's citations against the current branch and judges whether the fact still holds. That is a judgment, not an enforced rule. A rule that must reach the agent every time belongs in repository instructions.",
+   "takeaway": "Memory = facts Copilot may use. Instructions = rules given every time.",
+   "evidence": [
+    {
+     "quote": "Validation rules → Repository instructions",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/2-agent-memory-strategies",
+     "label": "Microsoft Learn · M5, unit 2"
+    },
+    {
+     "quote": "Repeatable processes should be stored as instructions or reusable skills. This avoids redefining the same workflow for every task.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/2-agent-memory-strategies",
+     "label": "Microsoft Learn · M5, unit 2"
+    },
+    {
+     "note": "When Copilot finds a repository-level fact relevant to its current work, it checks the fact's citations against the current branch to judge whether the information is still accurate. This is a judgment, not a guarantee enforced by the system, so a stored fact should not be relied on as a rule that will always be followed. To provide instructions consistently, use custom instructions.",
+     "source": "https://docs.github.com/en/copilot/concepts/prompting-and-context/copilot-memory",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/2-agent-memory-strategies",
+    "https://docs.github.com/en/copilot/concepts/prompting-and-context/copilot-memory"
+   ]
+  },
+  {
+   "id": "x1-d2-hook-log",
+   "type": "single",
+   "domain": "D2",
+   "module": "M4",
+   "unit": "U7",
+   "level": "analyse",
+   "stem": "An agent session in a GitHub repository named Repo1 stops. The session log ends with the following lines.\n\n```text\nError: Command blocked by policy\nReason: destructive_operation_detected\n[agent] Escalating to human review...\n```\n\nThe repository contains hook configuration files in `.github/hooks/`.\n\nYou need to identify the control that stopped the command. What stopped the command?",
+   "options": [
+    {
+     "id": "a",
+     "text": "A `preToolUse` hook that denied the tool call before it ran",
+     "rationale": "Correct. The command was blocked before execution, with a policy reason. Only a hook that runs before the tool call can do that."
+    },
+    {
+     "id": "b",
+     "text": "A `postToolUse` hook that reported the result of the command",
+     "rationale": "Incorrect. A `postToolUse` hook runs after the tool has completed, so it can't prevent the command."
+    },
+    {
+     "id": "c",
+     "text": "The agent's firewall",
+     "rationale": "Incorrect. The firewall blocks network requests to hosts that aren't allowed. It doesn't classify a command as destructive."
+    },
+    {
+     "id": "d",
+     "text": "A ruleset that targets the default branch",
+     "rationale": "Incorrect. A ruleset rejects pushes and merges. It doesn't see the commands that an agent runs in its session."
+    }
+   ],
+   "answer": [
+    "a"
+   ],
+   "explanation": "The log shows a block before execution, a policy reason and a handoff to a person. That is the signature of a pre-execution hook: `preToolUse` receives the requested tool call and can deny it. In the cloud agent nobody is present to answer a prompt, so a hook decision of `ask` is treated as `deny`.",
+   "takeaway": "\"Blocked by policy\" before execution → a `preToolUse` hook.",
+   "evidence": [
+    {
+     "quote": "This pre-execution (preToolUse) hook ensures risky actions, like deleting infrastructure, trigger a human handoff.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/7-scale-failure-recovery",
+     "label": "Microsoft Learn · M4, unit 7"
+    },
+    {
+     "note": "`preToolUse` is executed before the agent uses any tool and can approve or deny tool executions. `postToolUse` is executed after a tool completes. Under cloud agent, a `permissionDecision` of `ask` is treated as `deny`, because no user is available to answer.",
+     "source": "https://docs.github.com/en/copilot/reference/hooks-reference",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/7-scale-failure-recovery",
+    "https://docs.github.com/en/copilot/concepts/customizations/hooks",
+    "https://docs.github.com/en/copilot/reference/hooks-reference"
+   ]
+  },
+  {
+   "id": "x1-d1-defensive-gating",
+   "type": "single",
+   "domain": "D1",
+   "module": "M2",
+   "unit": "U6",
+   "level": "apply",
+   "stem": "A workflow named `PR Validation` is triggered by `pull_request` and by `workflow_dispatch`. One of its jobs posts a comment on the pull request. When a developer starts the workflow manually, that job fails, because the run is not associated with a pull request.\n\nYou need to ensure that the job runs only when the workflow is triggered by a pull request. Manual runs must remain possible for the other jobs.\n\nWhat should you add to the job?",
+   "options": [
+    {
+     "id": "a",
+     "text": "`if: github.ref == 'refs/heads/main'`",
+     "rationale": "Incorrect. This tests the branch of the run, not the event. A manual run from `main` would still start the job."
+    },
+    {
+     "id": "b",
+     "text": "`if: github.event_name == 'pull_request'`",
+     "rationale": "Correct. The `github` context holds the event that triggered the run, so the job is skipped for any other event."
+    },
+    {
+     "id": "c",
+     "text": "`if: vars.RUN_MODE == 'pull_request'`",
+     "rationale": "Incorrect. `vars` holds configuration values that are managed centrally. It doesn't say what triggered this run."
+    },
+    {
+     "id": "d",
+     "text": "`if: github.actor != 'github-actions[bot]'`",
+     "rationale": "Incorrect. This tests who started the run. A developer who starts it manually would still start the job."
+    }
+   ],
+   "answer": [
+    "b"
+   ],
+   "explanation": "A workflow can have several triggers, so behavior that depends on a pull request needs its own guard. A job-level `if` on `github.event_name` is that guard. The other jobs don't have the condition, so they still run when the workflow is started manually.",
+   "takeaway": "Behavior that needs a pull request → `if: github.event_name == 'pull_request'` on the job.",
+   "evidence": [
+    {
+     "quote": "You can prevent this by adding a job-level condition that ensures the workflow only runs when it's associated with a pull request.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+     "label": "Microsoft Learn · M2, unit 6"
+    },
+    {
+     "quote": "github.* → event metadata and runtime decisions (\"what triggered this run?\")",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+     "label": "Microsoft Learn · M2, unit 6"
+    },
+    {
+     "quote": "vars.* → centrally managed configuration values designed to be reused",
+     "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+     "label": "Microsoft Learn · M2, unit 6"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
+    "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions"
+   ]
+  },
+  {
+   "id": "x1-d5-isolation-statements",
+   "type": "statements",
+   "domain": "D5",
+   "module": "M4",
+   "unit": "U4",
+   "level": "understand",
+   "stem": "You are reviewing the isolation design of a multi-agent system in a GitHub repository named Repo1.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.\n\nNOTE: Each correct selection is worth one point.",
+   "items": [
+    {
+     "id": "s1",
+     "statement": "A `strategy.matrix` setting prevents two runs of the same workflow from overlapping when two agent sessions push to the same branch.",
+     "answer": "no",
+     "explanation": "A matrix creates several jobs inside one run. It doesn't control what happens between separate runs. That is the job of `concurrency`."
+    },
+    {
+     "id": "s2",
+     "statement": "Giving each agent a dedicated branch, such as `agent/dependency/<ticket>`, keeps its changes bounded and helps reviewers understand intent and scope.",
+     "answer": "yes",
+     "explanation": "A dedicated branch per agent bounds the change and shows which agent produced it."
+    },
+    {
+     "id": "s3",
+     "statement": "Letting several agents share one branch simplifies rollback and auditing, because all of their commits are in one place.",
+     "answer": "no",
+     "explanation": "On a shared branch the commits interleave and ownership becomes ambiguous, so one agent's change can't be reverted or attributed cleanly."
+    }
+   ],
+   "explanation": "Isolation separates agents by branch, by workflow and by permissions, and uses `concurrency` for runs that overlap in time. A matrix is a different tool: it fans one job out into variations within a single run.",
+   "takeaway": "Matrix = parallel jobs inside one run. Concurrency = control across runs.",
+   "evidence": [
+    {
+     "quote": "This makes changes bound and helps reviewers understand intent and scope.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/4-execution-isolation-permissions-concurrency",
+     "label": "Microsoft Learn · M4, unit 4"
+    },
+    {
+     "quote": "Using `strategy.matrix` controls intra-run parallelism, not parallelism across triggers or agent sessions.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/4-execution-isolation-permissions-concurrency",
+     "label": "Microsoft Learn · M4, unit 4"
+    },
+    {
+     "quote": "If multiple agents share the same branch or workflow context, you can end up with interleaved commits, ambiguous ownership, and repeated failures. This makes rollback and auditing significantly harder.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/4-execution-isolation-permissions-concurrency",
+     "label": "Microsoft Learn · M4, unit 4"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/4-execution-isolation-permissions-concurrency",
+    "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax"
+   ]
+  },
+  {
+   "id": "x1-d4-dependency-review",
+   "type": "single",
+   "domain": "D4",
+   "module": "M5",
+   "unit": "U5",
+   "level": "apply",
+   "stem": "Agents in a GitHub repository named Repo1 add and update package dependencies in their pull requests.\n\nYou need to ensure that a pull request that introduces a dependency with a known vulnerability is flagged in the pull request before it is merged. Which signal should you add to the evaluation of pull requests?",
+   "options": [
+    {
+     "id": "a",
+     "text": "A dependency review check",
+     "rationale": "Correct. Dependency review examines the dependency changes of a pull request and surfaces known vulnerabilities before the merge."
+    },
+    {
+     "id": "b",
+     "text": "Secret scanning push protection",
+     "rationale": "Incorrect. Push protection stops supported secrets from being committed. It doesn't assess dependencies."
+    },
+    {
+     "id": "c",
+     "text": "An environment with required reviewers",
+     "rationale": "Incorrect. An environment gates a job, typically a deployment. It doesn't inspect what a pull request changes."
+    },
+    {
+     "id": "d",
+     "text": "An uploaded artifact that contains the build log",
+     "rationale": "Incorrect. A build log is evidence of the build. It doesn't report vulnerabilities in new dependencies."
+    }
+   ],
+   "answer": [
+    "a"
+   ],
+   "explanation": "Security is part of evaluation, and each signal answers a different question. Code scanning looks for vulnerabilities in the code, secret scanning and push protection look for credentials, and dependency review looks at the dependencies that a pull request adds or changes.",
+   "takeaway": "New vulnerable dependency in a pull request → dependency review.",
+   "evidence": [
+    {
+     "quote": "Dependency review checks",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
+     "label": "Microsoft Learn · M5, unit 5"
+    },
+    {
+     "quote": "Treat security alerts or failed checks as blockers",
+     "source": "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
+     "label": "Microsoft Learn · M5, unit 5"
+    },
+    {
+     "quote": "The dependency review action lets you catch vulnerable dependencies before they're merged, by surfacing known vulnerabilities in a pull request's dependency changes.",
+     "source": "https://docs.github.com/en/code-security/tutorials/secure-your-organization/protect-against-threats",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
+    "https://docs.github.com/en/code-security/tutorials/secure-your-organization/protect-against-threats",
+    "https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-review"
+   ]
+  },
+  {
+   "id": "x1-d2-lock-file",
+   "type": "single",
+   "domain": "D2",
+   "module": "M3",
+   "unit": "U2",
+   "level": "analyse",
+   "stem": "A GitHub repository named Repo1 contains a GitHub Agentic Workflow in the file `daily-report.md`. You change the `safe-outputs` section of the frontmatter so that the workflow adds a label to the issues that it creates, and you commit only the Markdown file. The next scheduled run uses the previous configuration.\n\nYou need to apply the new configuration. What should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Re-run the last workflow run with debug logging enabled.",
+     "rationale": "Incorrect. A re-run executes the same compiled workflow again."
+    },
+    {
+     "id": "b",
+     "text": "Compile the workflow again, and commit the updated lock file.",
+     "rationale": "Correct. GitHub Actions executes the compiled lock file, and frontmatter is embedded in it at compile time."
+    },
+    {
+     "id": "c",
+     "text": "Grant the `issues: write` permission to the agent job in the frontmatter.",
+     "rationale": "Incorrect. The agent job stays read-only by design. Writes go through safe outputs, and a frontmatter change would again need compiling."
+    },
+    {
+     "id": "d",
+     "text": "Add a `workflow_dispatch` trigger to the frontmatter, and start the workflow manually.",
+     "rationale": "Incorrect. The trigger is frontmatter too, so it has no effect until the workflow is compiled, and a manual run would use the old lock file."
+    }
+   ],
+   "answer": [
+    "b"
+   ],
+   "explanation": "An agentic workflow has two parts: frontmatter for configuration, such as triggers, permissions, tools and safe outputs, and Markdown instructions. GitHub Actions doesn't run the Markdown file. It runs the lock file that is compiled from it, so a change to the frontmatter takes effect only after you compile again and commit both files.",
+   "takeaway": "Changed the frontmatter of an agentic workflow → recompile and commit the lock file.",
+   "evidence": [
+    {
+     "quote": "The workflow is then compiled into a lock file that GitHub Actions executes.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+     "label": "Microsoft Learn · M3, unit 2"
+    },
+    {
+     "quote": "Frontmatter for configuration such as triggers, permissions, tools, and safe outputs",
+     "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+     "label": "Microsoft Learn · M3, unit 2"
+    },
+    {
+     "note": "Frontmatter (tools, permissions, triggers, network rules) is embedded at compile time and requires `gh aw compile` after edits. The Markdown body is loaded at run time, so edits to it take effect on the next run. Commit both files.",
+     "source": "https://github.github.com/gh-aw/reference/faq/",
+     "label": "GitHub Agentic Workflows docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+    "https://github.github.com/gh-aw/reference/faq/",
+    "https://github.github.com/gh-aw/introduction/how-they-work/"
+   ]
+  },
+  {
+   "id": "x1-d5-ruleset-bypass",
+   "type": "single",
+   "domain": "D5",
+   "module": "M4",
+   "unit": "U7",
+   "level": "apply",
+   "stem": "A GitHub repository named Repo1 has a ruleset named RS1 that targets all branches. After RS1 is enabled, GitHub Copilot cloud agent can no longer push commits to its `copilot/` branches, because one of the rules in RS1 rejects them. The agent's tasks fail.\n\nYou need to allow the agent to push to its branches. RS1 must continue to apply to all other contributors on all branches.\n\nWhat should you do?",
+   "options": [
+    {
+     "id": "a",
+     "text": "Change the enforcement status of RS1 to Disabled.",
+     "rationale": "Incorrect. A disabled ruleset no longer applies to anyone."
+    },
+    {
+     "id": "b",
+     "text": "Add Copilot as a bypass actor in RS1.",
+     "rationale": "Correct. The bypass applies to Copilot only, so the rules of RS1 still bind every other contributor."
+    },
+    {
+     "id": "c",
+     "text": "Add the repository administrator role to the bypass list of RS1.",
+     "rationale": "Incorrect. That lets administrators bypass the rules. The agent is still blocked."
+    },
+    {
+     "id": "d",
+     "text": "Change the target of RS1 from all branches to the default branch only.",
+     "rationale": "Incorrect. The agent could push again, but RS1 would stop applying to the other branches for everyone."
+    }
+   ],
+   "answer": [
+    "b"
+   ],
+   "explanation": "A repository rule can stop the agent from creating or updating its branch. The supported fix is a bypass for Copilot on that ruleset. It is the narrowest change: one actor, one ruleset, and the rule stays active for people.",
+   "takeaway": "Rule blocks the agent's branch → bypass for Copilot on that ruleset, not a weaker ruleset.",
+   "evidence": [
+    {
+     "quote": "In the repository's Branches/Rulesets settings, locate your ruleset. Add \"GitHub Copilot\" as a bypass actor for that ruleset.",
+     "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/7-scale-failure-recovery",
+     "label": "Microsoft Learn · M4, unit 7"
+    },
+    {
+     "note": "A ruleset or branch protection rule can prevent Copilot from creating or updating pull requests. Repository administrators can configure a ruleset bypass for Copilot.",
+     "source": "https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-on-github",
+     "label": "GitHub Docs"
+    }
+   ],
+   "sources": [
+    "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/7-scale-failure-recovery",
+    "https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-on-github",
+    "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository"
+   ]
+  },
+  {
+   "id": "x1-case-litware",
+   "type": "case",
+   "domain": "D1",
+   "title": "Case study: Litware, Inc.",
+   "scenario": "### Overview\n\nLitware, Inc. is a software company that develops an order management platform. Litware has a GitHub organization named Litware.\n\n### Existing environment\n\nLitware has a private repository named `orders-api` that contains an ASP.NET Core service. The repository has the following configuration:\n\n- The default branch is `main`. A ruleset named RS1 targets `main`. RS1 requires a pull request, one approving review, and a status check named `build-test`. In RS1, **Require review from Code Owners** is not selected.\n- A workflow named `ci.yml` runs for pull requests and reports the `build-test` check.\n- A workflow named `deploy.yml` runs on every push to `main` and deploys the service to Azure. The workflow signs in to Azure by using a client secret that is stored as a repository secret.\n- The default permissions of the `GITHUB_TOKEN` are read and write.\n\nThe repository contains a CODEOWNERS file that has the following content.\n\n```text\n*                    @litware/orders-team\n/infra/              @litware/platform-team\n/.github/workflows/  @litware/platform-team\n```\n\n### Planned changes\n\nLitware plans to implement the following changes:\n\n- Enable GitHub Copilot cloud agent for `orders-api` and assign issues to the agent.\n- Add a remote MCP server named `tracker` so that the agent can read work items from the company's issue tracking system. The server exposes the tools `get_item`, `search_items`, `create_item`, and `update_item`.\n- Add two custom agents: a dependency agent that updates package references and lock files, and a documentation agent that updates the files in `/docs/`.\n- Restore the NuGet packages that the agent needs from a private feed at `nuget.litware.com`.\n\n### Problem statements\n\nLitware identifies the following issues:\n\n- Last month, a change to `/infra/` was approved by a member of the orders team and merged without a review by the platform team.\n- Production deployments start as soon as a pull request is merged. Nobody approves them.\n- In a pilot, the reviewers reported that the agent's pull requests contained a diff but no plan or rationale.\n\n### Technical requirements\n\nLitware identifies the following technical requirements:\n\n- Changes to `/infra/` and `/.github/workflows/` must be approved by the platform team before they are merged.\n- A production deployment must be approved by a release manager. The production credentials must be available only to the deployment job, and only after the approval.\n- The deployment job must sign in to Azure by using OpenID Connect (OIDC), and must not use a stored client secret.\n- The agent must be able to read work items, and must not be able to create or change them.\n- The dependency agent and the documentation agent must be able to work at the same time without interfering with each other.\n- All solutions must follow the principle of least privilege and must not weaken the existing controls.",
+   "questions": [
+    {
+     "id": "c1",
+     "type": "single",
+     "domain": "D1",
+     "module": "M2",
+     "unit": "U5",
+     "level": "analyse",
+     "stem": "You need to resolve the issue with the change to `/infra/` and meet the related technical requirement.\n\nWhat should you do?",
+     "options": [
+      {
+       "id": "a",
+       "text": "In RS1, select **Require review from Code Owners**.",
+       "rationale": "Correct. The CODEOWNERS file already names the platform team for `/infra/`. This option makes their approval a condition for merging."
+      },
+      {
+       "id": "b",
+       "text": "Move the `/infra/` line to the top of the CODEOWNERS file.",
+       "rationale": "Incorrect. The last matching pattern takes precedence, so `*` would then win for `/infra/` and the orders team would become the owner."
+      },
+      {
+       "id": "c",
+       "text": "Increase the number of required approving reviews in RS1 to two.",
+       "rationale": "Incorrect. Any two reviewers would satisfy the rule. Nothing requires one of them to be from the platform team."
+      },
+      {
+       "id": "d",
+       "text": "Add the platform team as required reviewers of an environment named `production`.",
+       "rationale": "Incorrect. Environment reviewers approve jobs, such as deployments. They don't gate the merge of a pull request."
+      }
+     ],
+     "answer": [
+      "a"
+     ],
+     "explanation": "CODEOWNERS only routes review requests. The platform team was requested as reviewer, but RS1 accepted an approval from anyone. With **Require review from Code Owners** selected, a pull request that changes an owned path can't merge without an approval from an owner of that path.",
+     "takeaway": "CODEOWNERS is advisory until the ruleset requires review from code owners.",
+     "evidence": [
+      {
+       "quote": "This ensures that a plan and changeset affecting high-risk paths can't be merged without visibility from the right experts (when combined with required review policies).",
+       "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/5-pull-request-governance-controls",
+       "label": "Microsoft Learn · M2, unit 5"
+      },
+      {
+       "quote": "Decision guidance: Make sure \"require CODEOWNERS review\" is enabled, or CODEOWNERS becomes advisory only.",
+       "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/3-enforce-governance-github-controls",
+       "label": "Microsoft Learn · M6, unit 3"
+      },
+      {
+       "note": "In a CODEOWNERS file, order is important: the last matching pattern takes the most precedence. To make the owners' review mandatory, enable **Require review from Code Owners**.",
+       "source": "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners",
+       "label": "GitHub Docs"
+      }
+     ],
+     "sources": [
+      "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/5-pull-request-governance-controls",
+      "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/3-enforce-governance-github-controls",
+      "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners",
+      "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets"
+     ]
+    },
+    {
+     "id": "c2",
+     "type": "multiple",
+     "domain": "D6",
+     "module": "M6",
+     "unit": "U3",
+     "level": "apply",
+     "select": 2,
+     "stem": "You need to meet the technical requirements for approving production deployments and for protecting the production credentials.\n\nWhich two actions should you perform? Each correct answer presents part of the solution.\n\nNOTE: Each correct selection is worth one point.",
+     "options": [
+      {
+       "id": "a",
+       "text": "Create an environment named `production`, add the release managers as required reviewers, and reference the environment in the deployment job.",
+       "rationale": "Correct. A job that references the environment waits until a required reviewer approves it."
+      },
+      {
+       "id": "b",
+       "text": "Store the production credentials as secrets of the `production` environment and remove them from the repository secrets.",
+       "rationale": "Correct. Environment secrets are available only to jobs that reference the environment, and only after its protection rules pass."
+      },
+      {
+       "id": "c",
+       "text": "Add the release managers to the CODEOWNERS file as the owners of `deploy.yml`.",
+       "rationale": "Incorrect. Code owners review changes to the workflow file. They don't approve each deployment."
+      },
+      {
+       "id": "d",
+       "text": "Increase the number of required approving reviews in RS1 to two.",
+       "rationale": "Incorrect. That gates the merge. The deployment would still start without approval as soon as the merge happens."
+      },
+      {
+       "id": "e",
+       "text": "Rename the repository secrets so that their names start with `PROD_`.",
+       "rationale": "Incorrect. A name doesn't restrict which jobs can read a repository secret."
+      }
+     ],
+     "answer": [
+      "a",
+      "b"
+     ],
+     "explanation": "An environment is the control for the point of execution. Required reviewers make the deployment job wait for a release manager. Moving the credentials into the environment's secrets ties them to that approval: a job gets them only if it references the environment and only after the approval.",
+     "takeaway": "Production gate = environment with required reviewers, plus environment secrets.",
+     "evidence": [
+      {
+       "quote": "require reviewers for production deploys",
+       "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/3-enforce-governance-github-controls",
+       "label": "Microsoft Learn · M6, unit 3"
+      },
+      {
+       "quote": "restrict production secrets to production environment only",
+       "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/3-enforce-governance-github-controls",
+       "label": "Microsoft Learn · M6, unit 3"
+      },
+      {
+       "quote": "Secrets stored in an environment are only available to workflow jobs that reference the environment. If the environment requires approval, a job cannot access environment secrets until one of the required reviewers approves it.",
+       "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments",
+       "label": "GitHub Docs"
+      }
+     ],
+     "sources": [
+      "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/3-enforce-governance-github-controls",
+      "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/4-design-human-workflows",
+      "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments",
+      "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments"
+     ]
+    },
+    {
+     "id": "c3",
+     "type": "single",
+     "domain": "D2",
+     "module": "M2",
+     "unit": "U7",
+     "level": "apply",
+     "stem": "You need to configure the `tracker` MCP server for GitHub Copilot cloud agent to meet the technical requirements.\n\nWhat should you include in the MCP configuration of the server?",
+     "options": [
+      {
+       "id": "a",
+       "text": "`\"tools\": [\"*\"]`, together with a custom instruction that forbids creating or changing work items",
+       "rationale": "Incorrect. All four tools are enabled, and the instruction is only guidance. The agent uses configured tools without asking for approval."
+      },
+      {
+       "id": "b",
+       "text": "`\"tools\": [\"get_item\", \"search_items\", \"update_item\"]`",
+       "rationale": "Incorrect. `update_item` lets the agent change work items."
+      },
+      {
+       "id": "c",
+       "text": "`\"type\": \"local\"`, so that the server runs in the agent's environment",
+       "rationale": "Incorrect. The server type decides how the agent reaches the server. It doesn't limit which tools the agent can call."
+      },
+      {
+       "id": "d",
+       "text": "`\"tools\": [\"get_item\", \"search_items\"]`",
+       "rationale": "Correct. Only the two read tools are enabled, so the agent has no tool with which it could create or change a work item."
+      }
+     ],
+     "answer": [
+      "d"
+     ],
+     "explanation": "The `tools` key is an allowlist. Whatever is listed there, the cloud agent can call autonomously, without asking for approval first. Listing only the read tools enforces the requirement technically, which an instruction can't do.",
+     "takeaway": "Restrict an MCP server with a specific `tools` list, never with `*` plus an instruction.",
+     "evidence": [
+      {
+       "quote": "Namespace control: prefer enabling a narrow tool subset rather than broad wildcards.",
+       "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+       "label": "Microsoft Learn · M2, unit 7"
+      },
+      {
+       "quote": "Adding or expanding MCP tools increases blast radius and should be reviewed like a high-risk dependency.",
+       "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+       "label": "Microsoft Learn · M2, unit 7"
+      },
+      {
+       "quote": "We strongly recommend that you allowlist specific read-only tools, since the agent will be able to use these tools autonomously and will not ask you for approval first.",
+       "source": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers",
+       "label": "GitHub Docs"
+      }
+     ],
+     "sources": [
+      "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
+      "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+      "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers"
+     ]
+    },
+    {
+     "id": "c4",
+     "type": "single",
+     "domain": "D2",
+     "module": "M3",
+     "unit": "U4",
+     "level": "analyse",
+     "stem": "During a test session, a warning in the agent's pull request states that a request to `nuget.litware.com` was blocked.\n\nYou need to allow the agent to restore packages from the private feed. The agent's access to the internet must remain restricted.\n\nWhat should you do?",
+     "options": [
+      {
+       "id": "a",
+       "text": "Disable the firewall for the agent in the settings of the repository.",
+       "rationale": "Incorrect. The feed would be reachable, but so would every other host, which removes the restriction."
+      },
+      {
+       "id": "b",
+       "text": "Add the URL of the feed to the custom instructions of the repository.",
+       "rationale": "Incorrect. An instruction tells the agent where the feed is. It doesn't open the firewall."
+      },
+      {
+       "id": "c",
+       "text": "Add `nuget.litware.com` to the custom allowlist of the agent's firewall.",
+       "rationale": "Correct. Only this host is added to what the agent may reach, and the rest of the internet stays blocked."
+      },
+      {
+       "id": "d",
+       "text": "Create an Agents secret that contains the URL of the feed.",
+       "rationale": "Incorrect. A secret passes a value to the agent. It doesn't change which hosts the agent can reach."
+      }
+     ],
+     "answer": [
+      "c"
+     ],
+     "explanation": "By default, the cloud agent's access to the internet is limited by a firewall with a recommended allowlist for common package registries. A private feed isn't on that list, so the request is blocked and reported in the pull request. Adding the host to the custom allowlist is the least-privilege fix. It applies to new sessions.",
+     "takeaway": "Blocked host for the agent → add that host to the firewall's custom allowlist.",
+     "evidence": [
+      {
+       "quote": "Network isolation and allowlisted outbound access",
+       "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+       "label": "Microsoft Learn · M3, unit 4"
+      },
+      {
+       "note": "By default, Copilot's access to the internet is limited by a firewall, and a recommended allowlist lets the agent download dependencies. If a request is blocked, a warning with the blocked address is added to the pull request. If Copilot needs to reach a host that isn't on the allowlist, add the host to the allowlist, then start a new session.",
+       "source": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-the-firewall",
+       "label": "GitHub Docs"
+      }
+     ],
+     "sources": [
+      "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+      "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-the-firewall"
+     ]
+    },
+    {
+     "id": "c5",
+     "type": "single",
+     "domain": "D5",
+     "module": "M4",
+     "unit": "U3",
+     "level": "evaluate",
+     "stem": "You need to recommend an orchestration design for the dependency agent and the documentation agent.\n\nWhich design should you recommend?",
+     "options": [
+      {
+       "id": "a",
+       "text": "Run the agents in parallel, each on a dedicated branch and limited to its own paths.",
+       "rationale": "Correct. The two agents change different paths, so they can't collide, and a branch for each keeps their work separate and attributable."
+      },
+      {
+       "id": "b",
+       "text": "Run the agents in parallel on one shared branch to reduce the number of pull requests.",
+       "rationale": "Incorrect. A shared branch interleaves their commits and makes ownership and rollback unclear."
+      },
+      {
+       "id": "c",
+       "text": "Run the documentation agent only after the pull request of the dependency agent is merged.",
+       "rationale": "Incorrect. Nothing in the documentation work depends on the dependency update, and the agents must be able to work at the same time."
+      },
+      {
+       "id": "d",
+       "text": "Replace both agents with one general-purpose agent that can change any path.",
+       "rationale": "Incorrect. A general-purpose agent has no scope boundary, which is the situation that responsibility mapping is meant to avoid."
+      }
+     ],
+     "answer": [
+      "a"
+     ],
+     "explanation": "Parallel orchestration is safe when scope boundaries prevent overlap. Lock files and package references on one side and `/docs/` on the other are separate paths, so the agents can run at the same time. Sequential orchestration is for work whose input is another agent's output.",
+     "takeaway": "Separate paths → parallel, with a branch per agent. Dependent outputs → sequential.",
+     "evidence": [
+      {
+       "quote": "Parallel orchestration is appropriate when scope boundaries prevent overlap. For example, a documentation agent and a refactoring agent can work simultaneously if they operate in separate paths.",
+       "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
+       "label": "Microsoft Learn · M4, unit 3"
+      },
+      {
+       "quote": "The core design requirement for parallel orchestration is isolation: if agents can collide on the same files, parallelism will increase instability rather than throughput.",
+       "source": "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
+       "label": "Microsoft Learn · M4, unit 3"
+      }
+     ],
+     "sources": [
+      "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
+      "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/4-execution-isolation-permissions-concurrency",
+      "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/2-multi-agent-responsibilities"
+     ]
+    },
+    {
+     "id": "c6",
+     "type": "dropdown",
+     "domain": "D6",
+     "module": "M6",
+     "unit": "U5",
+     "level": "apply",
+     "stem": "You need to complete the deployment job in `deploy.yml` to meet the technical requirements.\n\nHow should you complete the job?",
+     "template": "jobs:\n  deploy:\n    runs-on: ubuntu-latest\n    [[gate]]: production\n    permissions:\n      contents: read\n      [[perm]]: write\n    steps:\n      - uses: actions/checkout@v4\n      - uses: azure/login@v2\n        with:\n          client-id: ${{ secrets.AZURE_CLIENT_ID }}\n          tenant-id: ${{ secrets.AZURE_TENANT_ID }}\n          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}\n",
+     "blanks": {
+      "gate": {
+       "options": [
+        "concurrency",
+        "environment",
+        "needs"
+       ],
+       "answer": "environment",
+       "rationale": "Referencing the `production` environment makes the job wait for the release manager's approval and gives it the environment's secrets afterwards."
+      },
+      "perm": {
+       "options": [
+        "deployments",
+        "id-token",
+        "packages"
+       ],
+       "answer": "id-token",
+       "rationale": "A job needs `id-token: write` to request an OIDC token. It doesn't grant write access to any resource. Every permission that isn't listed is set to `none`."
+      }
+     },
+     "explanation": "The job gets exactly what it needs. `environment: production` applies the approval and releases the environment's secrets. `id-token: write` lets the job request the OIDC token that `azure/login` exchanges for an Azure access token, so no client secret is stored. Because a `permissions` block is present, all other scopes are `none`.",
+     "takeaway": "OIDC sign-in needs `id-token: write`. Declare permissions on the job that needs them.",
+     "evidence": [
+      {
+       "quote": "Set a read-only default at the workflow level, then elevate write permissions only for the job that must write.",
+       "source": "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/5-control-agent-capabilities",
+       "label": "Microsoft Learn · M6, unit 5"
+      },
+      {
+       "quote": "If you specify the access for any of these permissions, all of those that are not specified are set to `none`.",
+       "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax",
+       "label": "GitHub Docs"
+      },
+      {
+       "note": "The `id-token` permission is used to fetch an OpenID Connect (OIDC) token, and this requires `id-token: write`. The `azure/login` action receives a JWT from the GitHub OIDC provider and then requests an access token from Azure.",
+       "source": "https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure",
+       "label": "GitHub Docs"
+      }
+     ],
+     "sources": [
+      "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/5-control-agent-capabilities",
+      "https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure",
+      "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax"
+     ]
+    },
+    {
+     "id": "c7",
+     "type": "single",
+     "domain": "D1",
+     "module": "M1",
+     "unit": "U5",
+     "level": "apply",
+     "stem": "You need to resolve the issue that the reviewers reported during the pilot.\n\nWhat should you do?",
+     "options": [
+      {
+       "id": "a",
+       "text": "Increase the number of required approving reviews in RS1 to two.",
+       "rationale": "Incorrect. Two reviewers would look at the same diff without a plan."
+      },
+      {
+       "id": "b",
+       "text": "Add a pull request template that contains a required Plan section.",
+       "rationale": "Correct. The template makes every agent pull request state its goal, scope, steps and success criteria, so intent can be reviewed."
+      },
+      {
+       "id": "c",
+       "text": "Allow the agent to merge its own pull requests after the checks pass.",
+       "rationale": "Incorrect. That removes the review in which the missing plan was noticed."
+      },
+      {
+       "id": "d",
+       "text": "Increase the retention period of the workflow logs.",
+       "rationale": "Incorrect. Logs show what ran. They don't state what the agent intended to do or why."
+      }
+     ],
+     "answer": [
+      "b"
+     ],
+     "explanation": "A pull request with a diff and no plan or rationale is the anti-pattern called planless execution. The mitigation uses a GitHub control: a pull request template with a plan section, reviewed before merge. RS1 already requires a review, so the missing piece is the plan.",
+     "takeaway": "Diff without a plan → pull request template with a required Plan section.",
+     "evidence": [
+      {
+       "quote": "Planless execution: The agent begins changing code without a clear, inspectable approach.",
+       "source": "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/5-identify-risks-traceability",
+       "label": "Microsoft Learn · M1, unit 5"
+      },
+      {
+       "quote": "Require a plan section via PR template; require review before merge",
+       "source": "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/5-identify-risks-traceability",
+       "label": "Microsoft Learn · M1, unit 5"
+      },
+      {
+       "quote": "A pull request template ensures that every agent PR provides consistent plan and evidence sections.",
+       "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/5-pull-request-governance-controls",
+       "label": "Microsoft Learn · M2, unit 5"
+      }
+     ],
+     "sources": [
+      "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/5-identify-risks-traceability",
+      "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/5-pull-request-governance-controls"
+     ]
+    },
+    {
+     "id": "c8",
+     "type": "single",
+     "domain": "D1",
+     "module": "M2",
+     "unit": "U2",
+     "level": "understand",
+     "stem": "You need to recommend the SDLC stages to which GitHub Copilot cloud agent is scoped at first. The solution must minimize risk and use the stages in which GitHub can enforce boundaries on the agent's work.\n\nWhich stages should you recommend?",
+     "options": [
+      {
+       "id": "a",
+       "text": "Planning and deployment",
+       "rationale": "Incorrect. Deployment is the stage that is usually restricted and gated by approvals."
+      },
+      {
+       "id": "b",
+       "text": "Deployment only",
+       "rationale": "Incorrect. Deployment carries the highest risk and is usually restricted for agents."
+      },
+      {
+       "id": "c",
+       "text": "Implementation and validation",
+       "rationale": "Correct. In these stages, the pull request and the workflows are the control points for everything that the agent does."
+      },
+      {
+       "id": "d",
+       "text": "All stages",
+       "rationale": "Incorrect. An agent that operates across the whole SDLC is hard to reason about, to limit and to audit."
+      }
+     ],
+     "answer": [
+      "c"
+     ],
+     "explanation": "An agent shouldn't operate across the entire SDLC without restriction. Most teams start with implementation and validation, because there the agent's work passes through pull requests and workflow runs, which GitHub can gate. Deployment stays behind environments and approvals.",
+     "takeaway": "Start agents in implementation and validation. Agents propose; humans and policy accept.",
+     "evidence": [
+      {
+       "quote": "Most teams start by scoping agents to the implementation and validation stages, where pull requests and workflows provide natural control points.",
+       "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/2-agent-responsibilities",
+       "label": "Microsoft Learn · M2, unit 2"
+      },
+      {
+       "quote": "Agent systems should not operate across the entire SDLC without restriction.",
+       "source": "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/2-agent-responsibilities",
+       "label": "Microsoft Learn · M2, unit 2"
+      }
+     ],
+     "sources": [
+      "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/2-agent-responsibilities"
+     ]
+    }
+   ]
+  }
+ ]
+}
