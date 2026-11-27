@@ -509,6 +509,23 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
         "https://docs.github.com/en/actions/concepts/security/github_token"
+      ],
+      "evidence": [
+        {
+          "quote": "All API requests must be authenticated using tokens such as personal access tokens, GitHub App tokens, or the GITHUB_TOKEN provided in workflows.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "This ensures that every action an agent performs is permission-controlled and auditable.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+          "label": "Microsoft Learn"
+        },
+        {
+          "note": "`GITHUB_TOKEN` is limited to the repository that runs the workflow and expires when the job ends, so it can't serve three repositories. A GitHub App installation token is short-lived and limited to the repositories where the app is installed.",
+          "source": "https://docs.github.com/en/actions/concepts/security/github_token",
+          "label": "GitHub Docs"
+        }
       ]
     },
     {
@@ -568,6 +585,23 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
         "https://github.github.com/gh-aw/introduction/how-they-work/"
+      ],
+      "evidence": [
+        {
+          "quote": "They're best suited to open-ended but bounded repository tasks such as triage, reporting, documentation maintenance, CI failure analysis, and code improvement.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "They don't replace CI/CD pipelines; they extend them with what GitHub describes as \"Continuous AI.\"",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Traditional GitHub Actions workflows are usually deterministic and YAML-defined: you explicitly specify each step, trigger, and condition.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -604,6 +638,23 @@
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
         "https://github.github.com/gh-aw/introduction/how-they-work/",
         "https://github.github.com/gh-aw/reference/safe-outputs/"
+      ],
+      "evidence": [
+        {
+          "quote": "Frontmatter for configuration such as triggers, permissions, tools, and safe outputs",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "The Markdown expresses intent, while the frontmatter defines the boundaries. The workflow is then compiled into a lock file that GitHub Actions executes.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Safe outputs that let the agent propose actions while a separate gated step decides what is allowed",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -645,6 +696,23 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
         "https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/track-copilot-sessions"
+      ],
+      "evidence": [
+        {
+          "quote": "Agent sessions are observable and interactive.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Provide feedback or adjust the task",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "The agent adapts based on feedback and continues working until the task is complete.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -681,6 +749,28 @@
       "takeaway": "Remote GitHub MCP server = type HTTP + api.githubcopilot.com/mcp/ + sign in.",
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists"
+      ],
+      "evidence": [
+        {
+          "quote": "Select HTTP as the server type",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Enter the server URL (example for GitHub MCP server):",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "https://api.githubcopilot.com/mcp/",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "A remote MCP server is hosted elsewhere and accessed over the network.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -729,6 +819,18 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
         "https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-mcp-usage/configure-mcp-server-access"
+      ],
+      "evidence": [
+        {
+          "quote": "Enable anonymous access so Copilot can fetch the registry",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "If using Azure API Center, enter the base URL only (do not include /v0.1/servers)",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -765,6 +867,18 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
         "https://docs.github.com/en/copilot/reference/enterprise-administrators/mcp-allowlist-enforcement"
+      ],
+      "evidence": [
+        {
+          "quote": "If the Allow all option is selected, developers can add and use any MCP server without restrictions.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "If Registry only is selected, developers are limited to using only the MCP servers defined in the configured registry. In this case, even local MCP servers must be included in the registry, and their server IDs must match exactly.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -807,6 +921,23 @@
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
         "https://docs.github.com/en/copilot/reference/enterprise-administrators/mcp-allowlist-enforcement",
         "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers"
+      ],
+      "evidence": [
+        {
+          "quote": "GitHub supports MCP allowlist enforcement at the organization and enterprise level, tied to the Copilot seat that governs the user.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        },
+        {
+          "note": "The table of supported surfaces gives a minimum version for allow list enforcement in Copilot CLI, VS Code, Visual Studio, JetBrains, Eclipse and Xcode. Copilot in the cloud has no enforcement version listed.",
+          "source": "https://docs.github.com/en/copilot/reference/enterprise-administrators/mcp-allowlist-enforcement",
+          "label": "GitHub Docs"
+        },
+        {
+          "note": "The cloud agent's MCP servers are configured as JSON in the repository's Settings → Copilot → MCP servers.",
+          "source": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers",
+          "label": "GitHub Docs"
+        }
       ]
     },
     {
@@ -861,6 +992,23 @@
       "takeaway": "Doing = server. Finding = registry. Permitting = allow list.",
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists"
+      ],
+      "evidence": [
+        {
+          "quote": "MCP server exposes tools",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Registry makes servers discoverable and trustable",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Allow list decides which servers are permitted",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -902,6 +1050,18 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
         "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers"
+      ],
+      "evidence": [
+        {
+          "quote": "An MCP server is the component that exposes tools to an AI client.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
+          "label": "Microsoft Learn"
+        },
+        {
+          "note": "In the cloud agent's MCP configuration, each server's `tools` property is required and lists the tools Copilot may use; `\"*\"` enables all of them. GitHub recommends allowlisting specific read-only tools, because Copilot can use configured tools without asking for approval.",
+          "source": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers",
+          "label": "GitHub Docs"
+        }
       ]
     },
     {
@@ -944,6 +1104,18 @@
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
         "https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-from-cli"
       ],
+      "evidence": [
+        {
+          "quote": "When delegating tasks to the Copilot coding agent, you can select a specific base branch. This allows the agent to create a new branch based on your selected branch instead of the default branch (usually \"main\").",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Branch-based scope is always enforced by the execution context, not the custom agent itself.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        }
+      ],
       "also": [
         "M3-U2-C2"
       ]
@@ -981,6 +1153,23 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
         "https://docs.github.com/en/copilot/reference/custom-agents-configuration"
+      ],
+      "evidence": [
+        {
+          "quote": "Custom agents operate within a repository, but they don't control branch behavior directly. Branch-based scope is determined by the system that executes the agent.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "tools → defines what actions the agent can perform",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "note": "In the custom agents configuration reference, omitting `tools` gives the agent access to all available tools.",
+          "source": "https://docs.github.com/en/copilot/reference/custom-agents-configuration",
+          "label": "GitHub Docs"
+        }
       ]
     },
     {
@@ -1022,6 +1211,23 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
         "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax"
+      ],
+      "evidence": [
+        {
+          "quote": "Permissions should always be explicitly defined and minimized.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Adjust permissions based on what the workflow needs to do.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "note": "When `permissions:` declares any scope, every scope that isn't declared is set to `none`.",
+          "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax",
+          "label": "GitHub Docs"
+        }
       ],
       "also": [
         "M3-U4-C7"
@@ -1074,6 +1280,28 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
         "https://github.github.com/gh-aw/introduction/how-they-work/"
+      ],
+      "evidence": [
+        {
+          "quote": "Read-only tokens by default so the agent can inspect repository state without directly changing it",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Safe outputs that let the agent propose actions while a separate gated step decides what is allowed",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Zero secrets in the agent process, keeping sensitive credentials out of the runtime used by the coding agent",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Network isolation and allowlisted outbound access",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -1134,6 +1362,28 @@
       "takeaway": "Map the symptom to the boundary: where (repo), on what (branch), when (workflow), how much (permissions).",
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries"
+      ],
+      "evidence": [
+        {
+          "quote": "Execution context is the set of constraints that define where an agent operates and what it can access.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Repository scope defines where the agent operates, while custom agent configuration defines what the agent can access and do within that boundary.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Each workflow defines what triggers execution, what steps are performed, and what environment the code runs in.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Permissions define what an agent can do within its execution context.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -1175,6 +1425,13 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
         "https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-cloud-agent"
+      ],
+      "evidence": [
+        {
+          "quote": "Copilot in the cloud only has access to the repository where it's working. It can't access other repositories.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        }
       ],
       "also": [
         "M3-U4-C2"
@@ -1219,6 +1476,23 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
         "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax"
+      ],
+      "evidence": [
+        {
+          "quote": "Failing fast when a step runs into errors",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "This ensures that errors stop execution instead of silently continuing.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "note": "`continue-on-error` is `false` by default; setting it to `true` lets the job continue when the step fails.",
+          "source": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax",
+          "label": "GitHub Docs"
+        }
       ]
     },
     {
@@ -1259,6 +1533,13 @@
       "takeaway": "Retry transient failures; fix or escalate permanent ones.",
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections"
+      ],
+      "evidence": [
+        {
+          "quote": "Retries help handle temporary failures such as network issues or transient errors.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -1306,6 +1587,23 @@
       "takeaway": "Not merged → close the PR. Merged → revert through a PR, then fix in a new one.",
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections"
+      ],
+      "evidence": [
+        {
+          "quote": "Closing or discarding the pull request",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Reverting commits if changes are merged",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Review all actions through pull requests",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        }
       ]
     },
     {
@@ -1372,6 +1670,28 @@
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
         "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments"
       ],
+      "evidence": [
+        {
+          "quote": "Escalation ensures that critical decisions are always handled by humans.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Require approvals before jobs continue",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Retries help handle temporary failures such as network issues or transient errors.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "This ensures that every agent action can be inspected, understood, and attributed.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        }
+      ],
       "also": [
         "M3-U5-C7"
       ]
@@ -1409,6 +1729,23 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
         "https://docs.github.com/en/actions/concepts/security/github_token"
+      ],
+      "evidence": [
+        {
+          "quote": "Most actions performed with this token don't trigger extra workflow runs, which helps prevent unintended loops or repeated execution.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Other authentication methods, such as GitHub App tokens or personal access tokens (PATs), can trigger extra workflow runs depending on configuration.",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "note": "The exceptions for `GITHUB_TOKEN` are `workflow_dispatch` and `repository_dispatch`, which do create workflow runs.",
+          "source": "https://docs.github.com/en/actions/concepts/security/github_token",
+          "label": "GitHub Docs"
+        }
       ]
     },
     {
@@ -1450,6 +1787,28 @@
       "sources": [
         "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
         "https://docs.github.com/en/actions/concepts/security/github_token"
+      ],
+      "evidence": [
+        {
+          "quote": "Repository and organization settings can control:",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "Which workflows are allowed",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "What actions can run",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        },
+        {
+          "quote": "What the GITHUB_TOKEN is permitted to do",
+          "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
+          "label": "Microsoft Learn"
+        }
       ]
     }
   ]

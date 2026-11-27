@@ -4,7 +4,7 @@ A browser-based exam simulator for GitHub exam GH-600 (Developing in Agentic AI 
 Original practice questions, checked against the GH-600 study guide and GitHub Docs. These are not real exam questions.
 
 - `index.html`: the simulator (Exam, Practice and Learn modes). Works offline too.
-- `questions.json`: the bank loaded by default.
+- `questions.json`: the bank loaded by default (currently Module 3).
 - `banks/`: more banks; `banks/index.json` lists them in the app. Module banks (`m3.json`…) also contain lessons for Learn mode.
 - `QUESTION-WRITING.md`: how lessons and questions are written. `SOURCES.md`: the source inventory. `sources/`: one fact sheet per module.
 - `tools/`: build scripts for module banks.
