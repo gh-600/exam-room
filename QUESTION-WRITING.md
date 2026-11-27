@@ -45,9 +45,13 @@ A lesson teaches one claim in under a minute of reading.
   - a shortcut that loosens a control (bypass list, `write-all`, `pull_request_target`, disabling the firewall);
   - the learner's own error log.
 - **Depth:** where the claim is `confirmed`, the correct answer or a distractor should turn on a Docs detail (a default, an exact setting, a failure mode).
-- **Format:** spread across `single`, `multiple`, `statements`, `yesno` (problem-solution), `build`, `match`, `dropdown` and `case`. Spread the correct letter evenly. No cues: the correct option isn't the longest, and options are grammatically parallel.
+- **Format, two tiers:**
+  - *Core* (`single`, `statements`, `yesno` problem-solution): about **70 %** of a bank. These test one idea cleanly, and Learn mode's "Test me on this" uses only these. Every lesson needs at least one core question.
+  - *Exam format* (`multiple`, `build`, `match`, `dropdown`, `case`): about **30 %**. They practise the mechanics of the real exam and appear in Practice and Exam when "All exam formats" is selected.
+  - The tier follows from the type; set `"tier": "core"` or `"tier": "exam"` on a question only to override it.
+- **Letters:** spread the correct letter evenly. No cues: the correct option isn't the longest, and options are grammatically parallel.
 - **Originality:** never copy the module's knowledge-check questions or real exam questions.
-- **Density:** 4–6 questions per unit, and every lesson has at least one question (`nugget`, or `also` for a second lesson a question covers).
+- **Density:** 4–6 questions per unit or more, and every lesson has at least one core question (`nugget`, or `also` for a second lesson a question covers).
 
 ## 5. Quality gate before publishing
 
