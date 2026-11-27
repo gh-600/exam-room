@@ -145,6 +145,34 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .takeaway { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 8px 12px; border-radius: 4px; }
 .learnbar { display: flex; gap: 10px; flex-wrap: wrap; }
 .why-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 0.92rem; }
+.md-h { margin: 6px 0 0; font-size: 1rem; }
+.stmt-table { width: 100%; border-collapse: collapse; }
+.stmt-table th { text-align: center; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 6px; border-bottom: 1px solid var(--line); }
+.stmt-table th:first-child { text-align: left; }
+.stmt-table td { padding: 10px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.stmt-table td.yn-cell { text-align: center; width: 64px; }
+.stmt-table td.yn-cell input { width: 20px; height: 20px; accent-color: var(--accent); }
+.stmt-table tr.correct td:first-child { box-shadow: inset 4px 0 0 var(--ok); }
+.stmt-table tr.wrong td:first-child { box-shadow: inset 4px 0 0 var(--bad); }
+.build { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.build .col { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; background: var(--soft); }
+.build .col h4 { margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.build .chip { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; background: var(--paper); font-size: 0.95rem; }
+.build .chip.numbered { grid-template-columns: 22px minmax(0, 1fr) auto; }
+.build .chip .moves { display: flex; gap: 4px; }
+.build .chip button { padding: 2px 8px; }
+.build .chip.correct { border-color: var(--ok); background: var(--ok-soft); }
+.build .chip.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.match { display: flex; flex-direction: column; gap: 10px; }
+.match-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; background: var(--paper); }
+.match-row select { width: 100%; }
+.match-row.correct { border-color: var(--ok); background: var(--ok-soft); }
+.match-row.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.pool { display: flex; flex-wrap: wrap; gap: 6px; }
+.pool span { border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; font-size: 0.9rem; background: var(--soft); }
+.sel-count { font-size: 0.88rem; color: var(--muted); }
+.sel-count.warn { color: var(--warn); font-weight: 600; }
+@media (max-width: 560px) { .build, .match-row { grid-template-columns: minmax(0, 1fr); } }
 .sources { display: flex; flex-direction: column; gap: 2px; font-size: 0.86rem; overflow-wrap: anywhere; }
 
 /* Bottom action bar */
@@ -239,6 +267,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     const blocks = String(text ?? "").trim().split(/\n\s*\n/);
     return blocks.map((b) => {
       const lines = b.split("\n");
+      if (/^#{2,4}\s+/.test(lines[0])) { const head = "<h4 class=\"md-h\">" + inline(lines[0].replace(/^#{2,4}\s+/, "")) + "</h4>"; const rest = lines.slice(1).join("\n"); return head + (rest.trim() ? md(rest) : ""); }
       if (lines.every((l) => /^\s*-\s+/.test(l))) return "<ul>" + lines.map((l) => "<li>" + inline(l.replace(/^\s*-\s+/, "")) + "</li>").join("") + "</ul>";
       return "<p>" + lines.map(inline).join("<br>") + "</p>";
     }).join("");
@@ -255,7 +284,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
   const standalone = !(window.claude && window.claude.use);
 
   // ---------- bank validation ----------
-  const TYPES = ["single", "multiple", "yesno", "order", "dropdown", "case"];
+  const TYPES = ["single", "multiple", "yesno", "statements", "order", "build", "match", "dropdown", "case"];
   function validateQuestion(q, path, errs, inCase) {
     if (!q || typeof q !== "object") { errs.push(path + ": not an object"); return; }
     if (!q.id) errs.push(path + ": missing id");
@@ -275,8 +304,26 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       case "yesno":
         if (!q.scenario) errs.push(path + ": missing scenario");
         if (!Array.isArray(q.items) || !q.items.length) errs.push(path + ": needs items");
-        else q.items.forEach((it, i) => { if (!it.statement) errs.push(path + ".items[" + i + "]: missing statement"); if (!["yes", "no"].includes(it.answer)) errs.push(path + ".items[" + i + "]: answer must be \"yes\" or \"no\""); });
+        else q.items.forEach((it, i) => { if (!it.statement && !it.solution) errs.push(path + ".items[" + i + "]: missing statement or solution"); if (!["yes", "no"].includes(it.answer)) errs.push(path + ".items[" + i + "]: answer must be \"yes\" or \"no\""); });
         break;
+      case "statements":
+        if (!Array.isArray(q.items) || !q.items.length) errs.push(path + ": needs items");
+        else q.items.forEach((it, i) => { if (!it.id || !it.statement) errs.push(path + ".items[" + i + "]: needs id and statement"); if (!["yes", "no"].includes(it.answer)) errs.push(path + ".items[" + i + "]: answer must be \"yes\" or \"no\""); });
+        break;
+      case "build": {
+        const ids = (q.items || []).map((i) => i.id);
+        if (ids.length < 2) errs.push(path + ": needs at least 2 items");
+        if (!Array.isArray(q.answer) || !q.answer.length || !q.answer.every((a) => ids.includes(a)) || new Set(q.answer).size !== q.answer.length) errs.push(path + ": answer must list the ids to pick, once each, in order");
+        break;
+      }
+      case "match": {
+        const cids = (q.choices || []).map((c) => c.id);
+        if (cids.length < 2) errs.push(path + ": needs at least 2 choices");
+        if (!Array.isArray(q.targets) || !q.targets.length) errs.push(path + ": needs targets");
+        else q.targets.forEach((t, i) => { if (!t.id || !t.text) errs.push(path + ".targets[" + i + "]: needs id and text"); if (!cids.includes(t.answer)) errs.push(path + ".targets[" + i + "]: answer must be a choice id"); });
+        if (q.reuse === false && Array.isArray(q.targets) && new Set(q.targets.map((t) => t.answer)).size !== q.targets.length) errs.push(path + ": reuse is false but two targets share an answer");
+        break;
+      }
       case "order": {
         const ids = (q.items || []).map((i) => i.id);
         if (ids.length < 2) errs.push(path + ": needs at least 2 items");
@@ -341,9 +388,9 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       if (q.type === "yesno") {
         q.items.forEach((it, i) => units.push({ key: q.id + "/" + it.id, kind: "yesno", qid: q.id, q, item: it, domain: q.domain, section: { type: "yesno", id: q.id, n: i + 1, of: q.items.length } }));
       } else if (q.type === "case") {
-        q.questions.forEach((s, i) => units.push({ key: q.id + "/" + s.id, kind: s.type, qid: q.id, q: s, parent: q, domain: s.domain || q.domain, optOrder: optOrder(s), orderInit: s.type === "order" ? shuffle(s.items.map((x) => x.id)) : null, section: { type: "case", id: q.id, title: q.title, scenario: q.scenario, n: i + 1, of: q.questions.length } }));
+        q.questions.forEach((s, i) => units.push({ key: q.id + "/" + s.id, kind: s.type, qid: q.id, q: s, parent: q, domain: s.domain || q.domain, optOrder: optOrder(s), orderInit: (s.type === "order" || s.type === "build") ? shuffle(s.items.map((x) => x.id)) : null, section: { type: "case", id: q.id, title: q.title, scenario: q.scenario, n: i + 1, of: q.questions.length } }));
       } else {
-        units.push({ key: q.id, kind: q.type, qid: q.id, q, domain: q.domain, optOrder: optOrder(q), orderInit: q.type === "order" ? shuffle(q.items.map((x) => x.id)) : null, section: null });
+        units.push({ key: q.id, kind: q.type, qid: q.id, q, domain: q.domain, optOrder: optOrder(q), orderInit: (q.type === "order" || q.type === "build") ? shuffle(q.items.map((x) => x.id)) : null, section: null });
       }
     }
     return units;
@@ -382,6 +429,9 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       case "multiple": return Array.isArray(a) && a.length > 0;
       case "order": return Array.isArray(a);
       case "dropdown": return !!a && Object.keys(u.q.blanks).every((k) => a[k]);
+      case "statements": return !!a && u.q.items.every((it) => a[it.id]);
+      case "build": return Array.isArray(a) && a.length > 0;
+      case "match": return !!a && u.q.targets.every((t) => a[t.id]);
     }
     return false;
   }
@@ -404,6 +454,13 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
         const keys = Object.keys(u.q.blanks);
         return keys.filter((k) => a && a[k] === u.q.blanks[k].answer).length / keys.length;
       }
+      case "statements": return u.q.items.filter((it) => a && a[it.id] === it.answer).length / u.q.items.length;
+      case "build": {
+        if (!Array.isArray(a)) return 0;
+        const hits = u.q.answer.filter((id, i) => a[i] === id).length, extra = Math.max(0, a.length - u.q.answer.length);
+        return Math.max(0, hits - extra) / u.q.answer.length;
+      }
+      case "match": return u.q.targets.filter((t) => a && a[t.id] === t.answer).length / u.q.targets.length;
     }
     return 0;
   }
@@ -611,7 +668,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     main.append(h("section", { class: "panel" },
       h("details", { class: "help" },
         h("summary", null, "Question file format"),
-        h("div", { class: "prose", style: "margin-top:10px", html: md("A bank is one JSON object with `title`, optional `passingScore` (default 700), `durationMinutes`, `domains` (code → name) and a `questions` array. Every question has a unique `id`, a `type` and a `domain`. Text fields accept a little Markdown: `**bold**`, `` `code` ``, blank lines for paragraphs, and lines starting with `- ` for lists. Each question can carry an `explanation` and a `sources` array of URLs.\n\n- `single`: `stem`, `options` [{id, text}], `answer` [one id]\n- `multiple`: as single, plus `select` (how many to choose); `answer` lists every correct id. Scored with partial credit.\n- `yesno`: a shared `scenario` and `items` [{id, statement, answer: \"yes\"|\"no\", explanation}]. Each item is scored and locks once you leave it.\n- `order`: `stem`, `items` [{id, text}], `answer` [ids in the right order]. Shown shuffled.\n- `dropdown`: `stem`, a `template` with `[[name]]` markers, and `blanks` {name: {options, answer}}.\n- `case`: `title`, a long `scenario`, and `questions` (single, multiple, order or dropdown). The whole case locks once you leave it.") }),
+        h("div", { class: "prose", style: "margin-top:10px", html: md("A bank is one JSON object with `title`, optional `passingScore` (default 700), `durationMinutes`, `domains` (code → name) and a `questions` array. Every question has a unique `id`, a `type` and a `domain`. Text fields accept a little Markdown: `**bold**`, `` `code` ``, blank lines for paragraphs, and lines starting with `- ` for lists. Each question can carry an `explanation` and a `sources` array of URLs.\n\n- `single`: `stem`, `options` [{id, text}], `answer` [one id]\n- `multiple`: as single, plus `select` (how many to choose); `answer` lists every correct id. Scored with partial credit.\n- `yesno`: a shared `scenario` and `items` [{id, statement, answer: \"yes\"|\"no\", explanation}]. Each item is scored and locks once you leave it.\n- `yesno` items can use `solution` instead of `statement` for problem-solution sets (\"Does this meet the goal?\"; set `goal` on the question to change the wording).\n- `statements`: `stem` and `items` [{id, statement, answer, explanation}] shown together as a Yes/No grid on one screen. Partial credit per statement.\n- `order`: `stem`, `items` [{id, text}], `answer` [ids in the right order]. Shown shuffled.\n- `build` (build list): `stem`, a pool of `items` [{id, text}] that includes distractors, and `answer` [the ids to pick, in order].\n- `match` (drag and drop): `stem`, `choices` [{id, text}], `targets` [{id, text, answer, rationale}], and `reuse` (false if each value can be used only once).\n- `dropdown`: `stem`, a `template` with `[[name]]` markers, and `blanks` {name: {options, answer}}.\n- `case`: `title`, a long `scenario` (use `### Heading` lines for sections such as Overview or Requirements), and `questions` of any type except yesno and case. The whole case locks once you leave it.") }),
         h("pre", { class: "example", text: JSON.stringify({ title: "My bank", passingScore: 700, durationMinutes: 30, domains: { D2: "Tool use and environment interaction" }, questions: [{ id: "q1", type: "single", domain: "D2", stem: "Which job name does Copilot run before the cloud agent starts?", options: [{ id: "a", text: "`setup`" }, { id: "b", text: "`copilot-setup-steps`" }], answer: ["b"], explanation: "The job must be named copilot-setup-steps.", sources: ["https://docs.github.com/…"] }] }, null, 2) })
       )
     ));
@@ -662,7 +719,12 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       panel.append(prose(u.q.stem));
       const multi = u.kind === "multiple";
       const max = multi ? (u.q.select || u.q.answer.length) : 1;
-      if (multi) panel.append(h("p", { class: "instruction", text: "Select " + max + " answers." }));
+      if (multi) {
+        const counter = h("span", { class: "sel-count" });
+        const upd = () => { const n = (answers[u.key] || []).length; counter.textContent = n + " of " + max + " selected"; counter.classList.toggle("warn", n > 0 && n < max); };
+        upd(); u._upd = upd;
+        panel.append(h("p", { class: "instruction" }, "Select " + max + " answers. ", counter));
+      }
       const opts = (u.optOrder || u.q.options.map((o) => o.id)).map((id) => u.q.options.find((o) => o.id === id));
       opts.forEach((o, i) => {
         const id = "opt-" + u.key.replace(/[^\w-]/g, "_") + "-" + o.id;
@@ -673,6 +735,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
             let sel = [...body.querySelectorAll("input:checked")].map((x) => x.value);
             if (sel.length > max) { input.checked = false; sel = sel.filter((x) => x !== o.id); }
             setAns(sel.length ? sel : undefined);
+            if (u._upd) u._upd();
           } else setAns(o.id);
         });
         const isRight = u.q.answer.includes(o.id);
@@ -684,7 +747,10 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     }
 
     if (u.kind === "yesno") {
-      panel.append(h("p", { class: "instruction" }, h("span", { html: inline(u.itemObj.statement) })));
+      if (u.itemObj.solution) {
+        panel.append(h("div", { class: "prose" }, h("p", null, h("strong", { text: "Solution: " }), h("span", { html: inline(u.itemObj.solution) }))));
+        panel.append(h("p", { class: "instruction", text: u.top.goal || "Does this meet the goal?" }));
+      } else panel.append(h("p", { class: "instruction" }, h("span", { html: inline(u.itemObj.statement) })));
       const wrap = h("div", { class: "yn", role: "radiogroup", "aria-label": "Yes or No" });
       ["yes", "no"].forEach((v) => {
         const id = "yn-" + u.key.replace(/[^\w-]/g, "_") + "-" + v;
@@ -694,6 +760,72 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
         wrap.append(h("label", { class: "opt" + cls, for: id }, input, h("span", { text: v === "yes" ? "Yes" : "No" })));
       });
       panel.append(wrap);
+    }
+
+    if (u.kind === "statements") {
+      panel.append(prose(u.q.stem));
+      const a = Object.assign({}, answers[u.key] || {});
+      const tbody = h("tbody");
+      u.q.items.forEach((it) => {
+        const rowCls = revealed ? (a[it.id] === it.answer ? "correct" : "wrong") : "";
+        const cells = ["yes", "no"].map((v) => {
+          const id = "st-" + u.key.replace(/[^\w-]/g, "_") + "-" + it.id + "-" + v;
+          const inp = h("input", { type: "radio", id, name: "st-" + u.key + "-" + it.id, value: v, checked: a[it.id] === v, disabled, "aria-label": (v === "yes" ? "Yes: " : "No: ") + it.statement.replace(/[`*]/g, "") });
+          inp.addEventListener("change", () => { a[it.id] = v; setAns(Object.assign({}, a)); });
+          return h("td", { class: "yn-cell" }, inp);
+        });
+        tbody.append(h("tr", { class: rowCls }, h("td", { html: inline(it.statement) }), cells));
+      });
+      panel.append(h("div", { class: "table-wrap" }, h("table", { class: "stmt-table" }, h("thead", null, h("tr", null, h("th", { text: "Statements" }), h("th", { text: "Yes" }), h("th", { text: "No" }))), tbody)));
+      if (revealed) panel.append(h("ul", { class: "why-list" }, u.q.items.map((it, i) => h("li", null, h("strong", { text: (i + 1) + ". " + (it.answer === "yes" ? "Yes. " : "No. ") }), h("span", { html: inline(it.explanation || "") })))));
+    }
+
+    if (u.kind === "build") {
+      panel.append(prose(u.q.stem));
+      panel.append(h("p", { class: "instruction", text: "Move the appropriate actions from the list of actions to the answer area and arrange them in the correct order." }));
+      const picked = Array.isArray(answers[u.key]) ? answers[u.key].slice() : [];
+      const wrap = h("div", { class: "build" });
+      const txt = (id) => (u.q.items.find((x) => x.id === id) || {}).text;
+      const draw = () => {
+        wrap.replaceChildren();
+        const avail = u.orderInit.filter((id) => !picked.includes(id));
+        wrap.append(
+          h("div", { class: "col" }, h("h4", { text: "Actions" }), avail.length ? avail.map((id) => h("div", { class: "chip" }, h("span", { html: inline(txt(id)) }), h("button", { type: "button", class: "quiet", disabled, "aria-label": "Add to answer area", onclick: () => { picked.push(id); setAns(picked.slice()); draw(); } }, "Add ›"))) : h("p", { class: "small muted", text: "No actions left." })),
+          h("div", { class: "col" }, h("h4", { text: "Answer area" }), picked.length ? picked.map((id, i) => {
+            const cls = revealed ? (u.q.answer[i] === id ? " correct" : " wrong") : "";
+            return h("div", { class: "chip numbered" + cls }, h("span", { class: "mono", text: String(i + 1) }), h("span", { html: inline(txt(id)) }),
+              h("span", { class: "moves" },
+                h("button", { type: "button", class: "quiet", disabled: disabled || i === 0, "aria-label": "Move up", onclick: () => { [picked[i - 1], picked[i]] = [picked[i], picked[i - 1]]; setAns(picked.slice()); draw(); } }, "↑"),
+                h("button", { type: "button", class: "quiet", disabled: disabled || i === picked.length - 1, "aria-label": "Move down", onclick: () => { [picked[i + 1], picked[i]] = [picked[i], picked[i + 1]]; setAns(picked.slice()); draw(); } }, "↓"),
+                h("button", { type: "button", class: "quiet", disabled, "aria-label": "Remove", onclick: () => { picked.splice(i, 1); setAns(picked.length ? picked.slice() : undefined); draw(); } }, "✕")));
+          }) : h("p", { class: "small muted", text: "Add actions here, in order." })));
+      };
+      draw();
+      panel.append(wrap);
+      if (revealed) panel.append(h("p", { class: "small" }, "Correct sequence: " + u.q.answer.map((id, i) => (i + 1) + ". " + txt(id)).join("  ")));
+    }
+
+    if (u.kind === "match") {
+      panel.append(prose(u.q.stem));
+      panel.append(h("p", { class: "instruction", text: u.q.reuse === false ? "Match each item to the correct value. Each value may be used only once." : "Match each item to the correct value. Each value may be used once, more than once, or not at all." }));
+      panel.append(h("div", null, h("div", { class: "label", style: "margin-bottom:6px" }, "Values"), h("div", { class: "pool" }, u.q.choices.map((c) => h("span", { html: inline(c.text) })))));
+      const a = Object.assign({}, answers[u.key] || {});
+      const box = h("div", { class: "match" });
+      const draw = () => {
+        box.replaceChildren();
+        const used = new Set(Object.values(a));
+        u.q.targets.forEach((t) => {
+          const cls = revealed ? (a[t.id] === t.answer ? " correct" : " wrong") : "";
+          const sel = h("select", { id: "mt-" + u.key.replace(/[^\w-]/g, "_") + "-" + t.id, "aria-label": "Value for " + t.text.replace(/[`*]/g, ""), disabled },
+            h("option", { value: "", text: "— select a value —" }),
+            u.q.choices.map((c) => h("option", { value: c.id, text: c.text.replace(/[`*]/g, ""), selected: a[t.id] === c.id, disabled: u.q.reuse === false && used.has(c.id) && a[t.id] !== c.id })));
+          sel.addEventListener("change", () => { if (sel.value) a[t.id] = sel.value; else delete a[t.id]; setAns(Object.keys(a).length ? Object.assign({}, a) : undefined); draw(); });
+          box.append(h("div", { class: "match-row" + cls }, h("span", { html: inline(t.text) }), sel));
+        });
+      };
+      draw();
+      panel.append(box);
+      if (revealed) panel.append(h("ul", { class: "why-list" }, u.q.targets.map((t) => h("li", null, h("strong", { html: inline(t.text) + " → " + inline((u.q.choices.find((c) => c.id === t.answer) || {}).text) + ". " }), t.rationale ? h("span", { html: inline(t.rationale) }) : null))));
     }
 
     if (u.kind === "order") {
@@ -767,11 +899,14 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     const optWhy = withOptions && (u.kind === "single" || u.kind === "multiple") && u.q.options.some((o) => o.rationale)
       ? h("div", null, h("div", { class: "label" }, "Why each option"), h("ul", { class: "why-list" }, (u.optOrder || u.q.options.map((o) => o.id)).map((id, i) => { const o = u.q.options.find((x) => x.id === id); return h("li", null, h("strong", { text: letters[i] + ". " }), h("span", { html: inline(o.rationale || (u.q.answer.includes(o.id) ? "Correct." : "Incorrect.")) })); })))
       : null;
+    const extraWhy = withOptions && u.kind === "statements" ? h("ul", { class: "why-list" }, u.q.items.map((it, i) => h("li", null, h("strong", { text: (i + 1) + ". " + (it.answer === "yes" ? "Yes. " : "No. ") }), h("span", { html: inline(it.explanation || "") }))))
+      : withOptions && u.kind === "match" ? h("ul", { class: "why-list" }, u.q.targets.map((t) => h("li", null, h("strong", { html: inline(t.text) + " → " + inline(u.q.choices.find((c) => c.id === t.answer).text) + ". " }), t.rationale ? h("span", { html: inline(t.rationale) }) : null)))
+      : null;
     const blankWhy = withOptions && u.kind === "dropdown" ? h("ul", { class: "why-list" }, Object.entries(u.q.blanks).map(([k, b]) => h("li", null, h("strong", { text: k + " = " + b.answer + ". " }), b.rationale ? h("span", { html: inline(b.rationale) }) : null))) : null;
     return h("div", { class: "feedback " + (pts === 1 ? "ok" : "bad") },
       h("strong", { text: !isAnswered(u) ? "Answer shown." : pts === 1 ? "Correct." : pts > 0 ? "Partly correct (" + Math.round(pts * 100) + " %)." : "Not correct." }),
       expl ? prose(expl) : null,
-      optWhy, blankWhy,
+      optWhy, blankWhy, extraWhy,
       take ? h("div", { class: "takeaway" }, h("div", { class: "label" }, "Remember"), h("span", { html: inline(take) })) : null,
       sources.length ? h("div", { class: "sources" }, h("span", { class: "label" }, "Sources"), sources.map((s) => h("a", { href: s, target: "_blank", rel: "noopener", text: s }))) : null);
   }
@@ -874,6 +1009,9 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       case "yesno": return a === "yes" ? "Yes" : "No";
       case "order": return a.map((id, i) => (i + 1) + ". " + (u.q.items.find((x) => x.id === id) || {}).text).join("  ");
       case "dropdown": return Object.keys(u.q.blanks).map((k) => k + " = " + (a[k] || "—")).join(", ");
+      case "statements": return u.q.items.map((it, i) => (i + 1) + ": " + (a[it.id] ? (a[it.id] === "yes" ? "Yes" : "No") : "—")).join(", ");
+      case "build": return a.map((id, i) => (i + 1) + ". " + (u.q.items.find((x) => x.id === id) || {}).text).join("  ");
+      case "match": return u.q.targets.map((t) => t.text + " → " + ((u.q.choices.find((c) => c.id === a[t.id]) || {}).text || "—")).join(" ; ");
     }
     return "";
   }
@@ -883,10 +1021,17 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       case "yesno": return u.itemObj.answer === "yes" ? "Yes" : "No";
       case "order": return u.q.answer.map((id, i) => (i + 1) + ". " + u.q.items.find((x) => x.id === id).text).join("  ");
       case "dropdown": return Object.entries(u.q.blanks).map(([k, b]) => k + " = " + b.answer).join(", ");
+      case "statements": return u.q.items.map((it, i) => (i + 1) + ": " + (it.answer === "yes" ? "Yes" : "No")).join(", ");
+      case "build": return u.q.answer.map((id, i) => (i + 1) + ". " + u.q.items.find((x) => x.id === id).text).join("  ");
+      case "match": return u.q.targets.map((t) => t.text + " → " + u.q.choices.find((c) => c.id === t.answer).text).join(" ; ");
     }
     return "";
   }
-  function stemText(u) { return u.kind === "yesno" ? u.itemObj.statement : u.q.stem; }
+  function stemText(u) {
+    if (u.kind === "yesno") return u.itemObj.solution ? "Solution: " + u.itemObj.solution : u.itemObj.statement;
+    if (u.kind === "statements") return u.q.stem + "\n\n" + u.q.items.map((it, i) => "- " + (i + 1) + ". " + it.statement).join("\n");
+    return u.q.stem;
+  }
   function resultItem(x) {
     const u = x.u, a = session.answers[u.key];
     const status = x.pts === 1 ? ["ok", "Correct"] : x.pts > 0 ? ["warn", Math.round(x.pts * 100) + " %"] : !x.answered ? ["idle", "Unanswered"] : ["bad", "Incorrect"];

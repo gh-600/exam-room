@@ -1,5 +1,6 @@
 [
   { "title": "Set 1 · 17 questions, all domains", "file": "banks/set1.json" },
   { "title": "Set 2 · quick test, 5 questions", "file": "banks/set2-quick.json" },
-  { "title": "Set 3 · mini, 3 questions", "file": "banks/set3-mini.json" }
+  { "title": "Set 3 · mini, 3 questions", "file": "banks/set3-mini.json" },
+  { "title": "Set 4 · every question format", "file": "banks/set4-formats.json" }
 ]

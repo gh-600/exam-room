@@ -1,0 +1,121 @@
+{
+  "title": "GH-600 practice bank · set 4 (all question formats)",
+  "version": 1,
+  "author": "Claude, checked against GitHub Docs (November 2026). Covers every question format the simulator supports.",
+  "passingScore": 700,
+  "durationMinutes": 15,
+  "domains": {
+    "D1": "Agent architecture and SDLC",
+    "D2": "Tool use and environment interaction",
+    "D6": "Guardrails and accountability"
+  },
+  "questions": [
+    {
+      "id": "s4-stacked-agent",
+      "type": "statements",
+      "domain": "D2",
+      "stem": "Contoso enables GitHub Copilot cloud agent on `contoso/orders-api`. The default branch is protected by a ruleset that requires one approving review.\n\nFor each of the following statements, select Yes if the statement is true. Otherwise, select No.",
+      "items": [
+        { "id": "a", "statement": "The cloud agent can push commits directly to the default branch.", "answer": "no", "explanation": "The agent can only push to branches it creates (`copilot/…`) and works through pull requests." },
+        { "id": "b", "statement": "Workflows on a pull request opened by the cloud agent wait for a user with write access to approve them before they run.", "answer": "yes", "explanation": "By default, GitHub Actions workflows don't run automatically on the agent's pull requests; someone with write access approves them." },
+        { "id": "c", "statement": "The developer who asked Copilot to create the pull request can approve it to satisfy the required review.", "answer": "no", "explanation": "The person who asked Copilot to create a pull request can't approve it, which keeps the required-approvals control independent." }
+      ],
+      "takeaway": "Agent: own branch only, its CI runs need approval, and the requester can't be the approver.",
+      "sources": ["https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/risks-and-mitigations"]
+    },
+    {
+      "id": "s4-problem-solution",
+      "type": "yesno",
+      "domain": "D6",
+      "goal": "Does this meet the goal?",
+      "scenario": "This question is part of a series of questions that present the same scenario. Each question in the series contains a unique solution that might meet the stated goals.\n\nCODEOWNERS in `contoso/orders-api` contains a single line: `* @contoso/developers`. The ruleset on `main` requires one approving review. Agents open pull requests that sometimes change files under `.github/workflows/`.\n\n**Goal:** a change under `.github/workflows/` must not be merged without approval from `@contoso/platform`.",
+      "items": [
+        { "id": "s1", "solution": "Add `/.github/workflows/ @contoso/platform` on a new line **after** the existing line, and turn on \"Require review from Code Owners\" in the ruleset.", "answer": "yes", "explanation": "The last matching pattern wins, so the new line owns workflow files, and the code owner review rule makes that approval mandatory." },
+        { "id": "s2", "solution": "Add \"Never modify files under .github/workflows\" to `.github/copilot-instructions.md`.", "answer": "no", "explanation": "Instructions are guidance; nothing blocks the merge if the agent edits a workflow anyway." },
+        { "id": "s3", "solution": "Add `/.github/workflows/ @contoso/platform` as the **first** line of CODEOWNERS, and turn on \"Require review from Code Owners\" in the ruleset.", "answer": "no", "explanation": "The `*` line comes later and matches everything, so it overrides the workflow line; developers remain the owners." }
+      ],
+      "takeaway": "Problem-solution sets: judge each solution on its own. CODEOWNERS needs the right order and the code owner review rule.",
+      "sources": ["https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners"]
+    },
+    {
+      "id": "s4-build-gh-aw",
+      "type": "build",
+      "domain": "D2",
+      "stem": "You need to add a GitHub Agentic Workflow that produces a weekly repository report. The repository doesn't use Agentic Workflows yet.\n\nWhich five actions should you perform in sequence?",
+      "items": [
+        { "id": "install", "text": "Install the `gh aw` extension for the GitHub CLI." },
+        { "id": "author", "text": "Write the workflow as a Markdown file in `.github/workflows/`, with triggers, permissions and safe outputs in the frontmatter." },
+        { "id": "compile", "text": "Run `gh aw compile` to generate the `.lock.yml` workflow." },
+        { "id": "commit", "text": "Commit both the `.md` file and the generated `.lock.yml` file." },
+        { "id": "run", "text": "Trigger the workflow and review the issue it creates." },
+        { "id": "edit-lock", "text": "Edit the `.lock.yml` file by hand to add the steps the agent needs." },
+        { "id": "bypass", "text": "Add the agent to the ruleset bypass list so its outputs aren't blocked." }
+      ],
+      "answer": ["install", "author", "compile", "commit", "run"],
+      "explanation": "The Markdown file is the source and the compiler generates the lock file that GitHub Actions runs, so both are committed together. Hand-editing the lock file is overwritten by the next compile, and the bypass list is never the answer for agents.",
+      "takeaway": "Agentic Workflows: author Markdown → compile → commit .md and .lock.yml → run.",
+      "sources": ["https://github.github.com/gh-aw/introduction/how-they-work/", "https://docs.github.com/en/copilot/how-tos/github-agentic-workflows/quickstart"]
+    },
+    {
+      "id": "s4-match-controls",
+      "type": "match",
+      "domain": "D6",
+      "reuse": true,
+      "stem": "You are designing guardrails for agents in `contoso/orders-api`.\n\nWhich control should you use for each requirement? To answer, select the appropriate control for each requirement.",
+      "choices": [
+        { "id": "ruleset", "text": "Ruleset required status checks" },
+        { "id": "codeowners", "text": "CODEOWNERS" },
+        { "id": "environment", "text": "Environment required reviewers" },
+        { "id": "hook", "text": "`preToolUse` hook" },
+        { "id": "firewall", "text": "Cloud agent firewall" },
+        { "id": "safeoutputs", "text": "Agentic Workflows safe outputs" }
+      ],
+      "targets": [
+        { "id": "t1", "text": "Block merging until the `build` and `test` jobs succeed.", "answer": "ruleset", "rationale": "Required status checks gate the merge on CI results." },
+        { "id": "t2", "text": "Define who must review changes to files under `infra/`.", "answer": "codeowners", "rationale": "CODEOWNERS maps paths to owners; the ruleset's code owner review rule makes their approval mandatory." },
+        { "id": "t3", "text": "Pause a production deployment until the operations team approves it.", "answer": "environment", "rationale": "Environment required reviewers hold the deploy job before it runs." },
+        { "id": "t4", "text": "Deny the shell command `az group delete` before the agent runs it.", "answer": "hook", "rationale": "A `preToolUse` hook inspects each tool call and can deny it with a reason." },
+        { "id": "t5", "text": "Limit which external hosts the cloud agent can reach during its session.", "answer": "firewall", "rationale": "The firewall restricts the agent's outbound network access to an allowlist." }
+      ],
+      "explanation": "Each control acts at a different point: merge (rulesets, CODEOWNERS), deployment (environments), tool execution (hooks) and network (firewall). Safe outputs aren't used here; they constrain what an Agentic Workflow may write.",
+      "takeaway": "Match the control to the moment it acts: merge, deploy, tool call or network.",
+      "sources": ["https://docs.github.com/en/copilot/tutorials/cloud-agent/build-guardrails", "https://docs.github.com/en/copilot/reference/hooks-reference"]
+    },
+    {
+      "id": "s4-case-northwind",
+      "type": "case",
+      "title": "Case study: Northwind Traders",
+      "scenario": "### Overview\nNorthwind Traders builds its ordering platform in .NET and hosts it on Azure. The code is in the GitHub organisation `northwind`, mainly in the repository `northwind/platform`.\n\n### Existing environment\n- Deployments run from `.github/workflows/deploy.yml` and authenticate to Azure with a client secret stored as the Actions repository secret `AZURE_CREDENTIALS`.\n- Developers have the Write role on `northwind/platform`.\n- GitHub Copilot cloud agent is enabled for the organisation.\n\n### Requirements\n- Developers will assign issues to the cloud agent.\n- Deployments must stop using stored long-lived Azure credentials.\n- A weekly dependency report must be created as an issue by an AI agent, without giving the agent write access to the repository.",
+      "questions": [
+        {
+          "id": "q1",
+          "type": "statements",
+          "domain": "D2",
+          "stem": "For each of the following statements, select Yes if the statement is true. Otherwise, select No.",
+          "items": [
+            { "id": "a", "statement": "Developers with the Write role can assign issues in `northwind/platform` to the cloud agent.", "answer": "yes", "explanation": "Users with write access to the repository can assign work to Copilot cloud agent, provided it's enabled for them." },
+            { "id": "b", "statement": "The cloud agent can read `AZURE_CREDENTIALS` during its session.", "answer": "no", "explanation": "The cloud agent doesn't have access to Actions secrets; only secrets configured under Agents." },
+            { "id": "c", "statement": "To authenticate to Azure with OpenID Connect, the deploy job needs the `id-token: write` permission.", "answer": "yes", "explanation": "The job must be allowed to request an OIDC token from GitHub." }
+          ],
+          "takeaway": "Write access assigns work; Agents secrets only; OIDC needs id-token: write."
+        },
+        {
+          "id": "q2",
+          "type": "single",
+          "domain": "D6",
+          "stem": "Which approach meets the requirement for the weekly dependency report?",
+          "options": [
+            { "id": "a", "text": "A scheduled workflow that runs Copilot CLI with `issues: write` and `contents: write`.", "rationale": "Incorrect. The agent itself would hold write access, which the requirement forbids." },
+            { "id": "b", "text": "Assign a recurring issue to the cloud agent every Monday.", "rationale": "Incorrect. The cloud agent writes to the repository through branches and pull requests, and nothing here schedules it." },
+            { "id": "c", "text": "A GitHub Agentic Workflow on a weekly schedule with read-only permissions and a `create-issue` safe output.", "rationale": "Correct. The agent only proposes the issue; a separate safe-output job validates and creates it, so the agent never has write access." },
+            { "id": "d", "text": "A Dependabot configuration with weekly version updates.", "rationale": "Incorrect. Dependabot opens update pull requests; it isn't an AI-written report issue." }
+          ],
+          "answer": ["c"],
+          "explanation": "Safe outputs separate the agent's proposal from the write action, which a deterministic job performs with only the permission it needs.",
+          "takeaway": "AI that must create things without write access → Agentic Workflow + safe outputs."
+        }
+      ],
+      "sources": ["https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/configure-secrets-and-variables", "https://docs.github.com/en/actions/concepts/security/openid-connect", "https://github.github.com/gh-aw/reference/safe-outputs/"]
+    }
+  ]
+}
