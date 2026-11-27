@@ -1,4 +1,4 @@
 [
-  { "title": "Full exam 1 · 60 questions · 120 minutes", "file": "banks/exam1.json" },
-  { "title": "Module 3 · Tooling and MCP · lessons + 31 questions", "file": "banks/m3.json" }
+  { "title": "Sample · 6 questions, one per format", "file": "banks/sample.json" },
+  { "title": "Full exam 1 · 60 questions · 120 minutes", "file": "banks/exam1.json" }
 ]
