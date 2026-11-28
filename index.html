@@ -1172,14 +1172,19 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
           h("ul", { class: "why-list" }, w.clues.map((c) => h("li", null, h("strong", null, c.kind + ": "), h("span", { html: inline(c.text) })))),
           h("p", { class: "small muted", style: "margin:4px 0 0" }, "Clues from the study guide, the Learn modules, GitHub Docs and one candidate's report. Nobody outside Microsoft knows the real item pool.")); })(),
       sources.length ? h("div", { class: "sources" }, h("span", { class: "label" }, "Sources"), sources.map((s) => h("a", { href: s, target: "_blank", rel: "noopener", text: s }))) : null,
-      (() => { const m = h("span", { class: "small muted", role: "status" });
-        return h("div", { class: "row" }, h("button", { type: "button", class: "secondary", onclick: () => copyQuestion(u, pts, m) }, "Copy for Claude"), m); })());
+      (pts < 1 && isAnswered(u)) ? (() => { const m = h("span", { class: "small muted", role: "status" });
+        return h("div", { class: "row" }, h("button", { type: "button", class: "secondary", onclick: () => copyQuestion(u, pts, m) }, "Copy error"), m); })() : null);
   }
   // One question, ready to paste into a Claude chat to go deeper.
   function questionMarkdown(u, pts) {
     const r = itemRecord({ u, pts, answered: isAnswered(u) }, (session.units || []).indexOf(u) + 1 || "");
     const L = [];
-    L.push("I'm preparing for the GitHub GH-600 exam (Developing in Agentic AI Systems). Help me go deeper on this practice question: explain why the correct answer is right" + (r.result === "correct" ? "" : ", why my answer is wrong") + ", which GitHub feature or concept it tests, and how it could be asked differently on the exam. Check product facts against GitHub Docs and tell me if anything in the question or the key looks wrong.", "");
+    L.push("I'm preparing for the GitHub GH-600 exam (Developing in Agentic AI Systems) and I got this practice question " + (r.result === "partial" ? "partly wrong" : "wrong") + ". Help me analyse the error:",
+      "1. Why my answer is wrong: the misconception or confusion it reveals, and which detail in the question should have ruled it out.",
+      "2. Why the correct answer is right, in a few sentences, with the GitHub feature or concept it tests.",
+      "3. How to avoid this error in the future: a rule of thumb or a way to tell the options apart, and the clue words to look for in the stem.",
+      "4. One or two short variants of the question so I can check that I now get it right.",
+      "Check product facts against GitHub Docs, and tell me if the question or the key itself looks wrong.", "");
     L.push("## Question" + (r.domain ? " · " + r.domain + " " + (r.domainName || "") : "") + " · " + (session.bankTitle || "") + " · `" + r.key + "`", "");
     if (r.caseStudy) L.push("**Case study: " + r.caseStudy.title + "**", "", r.caseStudy.scenario, "");
     if (r.scenario) L.push("**Scenario (problem-solution series):**", "", r.scenario, "");
