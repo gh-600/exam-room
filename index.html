@@ -1173,7 +1173,10 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
           h("p", { class: "small muted", style: "margin:4px 0 0" }, "Clues from the study guide, the Learn modules, GitHub Docs and one candidate's report. Nobody outside Microsoft knows the real item pool.")); })(),
       sources.length ? h("div", { class: "sources" }, h("span", { class: "label" }, "Sources"), sources.map((s) => h("a", { href: s, target: "_blank", rel: "noopener", text: s }))) : null,
       (pts < 1 && isAnswered(u)) ? (() => { const m = h("span", { class: "small muted", role: "status" });
-        return h("div", { class: "row" }, h("button", { type: "button", class: "secondary", onclick: () => copyQuestion(u, pts, m) }, "Copy error"), m); })() : null);
+        const retry = view === "question" && session.cfg.mode !== "exam"
+          ? h("button", { type: "button", onclick: () => { delete session.answers[u.key]; delete session.revealed[u.key]; persist(); render(); window.scrollTo(0, 0); } }, "Try again") : null;
+        return h("div", { class: "row" }, retry, h("button", { type: "button", class: "secondary", onclick: () => copyQuestion(u, pts, m) }, "Copy error"), m,
+          retry ? h("p", { class: "small muted", style: "margin:0;flex-basis:100%" }, "Your score keeps the first attempt.") : null); })() : null);
   }
   // One question, ready to paste into a Claude chat to go deeper.
   function questionMarkdown(u, pts) {
