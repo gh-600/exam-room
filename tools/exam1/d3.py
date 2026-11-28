@@ -42,7 +42,7 @@ Q("x1-d3-drift", "single", "D3", "M5U3", "analyse",
   stem="An agent is implementing an issue in a GitHub repository named Repo1. The acceptance criteria require input validation for one API endpoint. After several iterations, the pull request also contains a refactoring of the logging subsystem, and the latest commits contradict a design decision that is recorded in the pull request description.\n\n"
        "You need to correct the context drift. What should the agent do first?",
   options=[
-      opt("a", "Re-read the issue and the pull request description, and compare the current changes with the acceptance criteria.", "Correct. Drift is corrected by returning to the source of truth and measuring the changes against it."),
+      opt("a", "Re-read the issue and the pull request, and compare the changes with the acceptance criteria.", "Correct. Drift is corrected by returning to the source of truth and measuring the changes against it."),
       opt("b", "Update the acceptance criteria in the issue so that they include the logging refactoring.", "Incorrect. That changes the goal to match the drift. The requirement didn't change."),
       opt("c", "Start a new session that continues from the agent's own summary of its earlier work.", "Incorrect. The agent's summary carries the same drifted context forward."),
       opt("d", "Merge the pull request and create a follow-up issue for the logging changes.", "Incorrect. That accepts changes that don't match the acceptance criteria."),

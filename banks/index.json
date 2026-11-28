@@ -1,4 +1,4 @@
 [
   { "title": "Sample · 6 questions, one per format", "file": "banks/sample.json" },
-  { "title": "Full exam 1 · 60 questions · 120 minutes", "file": "banks/exam1.json" }
+  { "title": "Full exam 1 · 60 questions · 50 lessons · 120 minutes", "file": "banks/exam1.json" }
 ]

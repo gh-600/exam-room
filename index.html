@@ -414,7 +414,11 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     (bank ? bank.questions : []).forEach((q) => add(q.module, q.unit));
     return out.sort((a, b) => a.key.localeCompare(b.key, undefined, { numeric: true }));
   }
-  const questionsFor = (nid) => (bank ? bank.questions.filter((q) => q.nugget === nid || (q.also || []).includes(nid) || (q.type === "case" && q.questions.some((x) => x.nugget === nid))) : []);
+  const hasNug = (x, nid) => x.nugget === nid || (x.also || []).includes(nid);
+  const questionsFor = (nid) => (bank ? bank.questions.filter((q) => hasNug(q, nid) || (q.type === "case" && q.questions.some((x) => hasNug(x, nid)))) : []);
+  // a case study counts as "core" for a lesson when one of its questions on that lesson is a core type
+  const coreFor = (q, nid) => (q.type === "case" ? q.questions.some((x) => hasNug(x, nid) && isCore(x)) : isCore(q));
+  const lessonItems = (qs, nid) => qs.reduce((n, q) => n + (q.type === "case" ? q.questions.filter((x) => hasNug(x, nid)).length : 1), 0);
   let timerHandle = null, db = null, dl = null, attempts = [], dbState = "pending";
   const defaultCfg = () => ({ mode: "exam", count: 0, domains: [], minutes: 0, shuffleQ: true, shuffleOpts: true, unit: "", types: "all" });
   let cfg = Object.assign(defaultCfg(), storeGet(CONFIG_KEY) || {});
@@ -448,7 +452,9 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       if (q.type === "yesno") {
         q.items.forEach((it, i) => units.push({ key: q.id + "/" + it.id, kind: "yesno", qid: q.id, q, item: it, domain: q.domain, section: { type: "yesno", id: q.id, n: i + 1, of: q.items.length } }));
       } else if (q.type === "case") {
-        q.questions.forEach((s, i) => units.push({ key: q.id + "/" + s.id, kind: s.type, qid: q.id, q: s, parent: q, domain: s.domain || q.domain, optOrder: optOrder(s), orderInit: (s.type === "order" || s.type === "build") ? shuffle(s.items.map((x) => x.id)) : null, section: { type: "case", id: q.id, title: q.title, scenario: q.scenario, n: i + 1, of: q.questions.length } }));
+        // from a lesson ("Test me on this"), only the case questions that belong to that lesson are shown
+        const subs = c.nugget ? q.questions.filter((s) => hasNug(s, c.nugget)) : q.questions;
+        subs.forEach((s, i) => units.push({ key: q.id + "/" + s.id, kind: s.type, qid: q.id, q: s, parent: q, domain: s.domain || q.domain, optOrder: optOrder(s), orderInit: (s.type === "order" || s.type === "build") ? shuffle(s.items.map((x) => x.id)) : null, section: { type: "case", id: q.id, title: q.title, scenario: q.scenario, n: i + 1, of: subs.length } }));
       } else {
         units.push({ key: q.id, kind: q.type, qid: q.id, q, domain: q.domain, optOrder: optOrder(q), orderInit: (q.type === "order" || q.type === "build") ? shuffle(q.items.map((x) => x.id)) : null, section: null });
       }
@@ -861,11 +867,11 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
   function openLearn(unit, idx) { lesson = { unit: unit || "", idx: idx || 0 }; session = null; storeSet(SESSION_KEY, null); view = "learn"; clearInterval(timerHandle); $("sbTimer").hidden = true; render(); window.scrollTo(0, 0); }
   function backToLesson() { const l = session.fromLesson; session = null; storeSet(SESSION_KEY, null); lesson = { unit: l.unit, idx: l.idx }; view = "learn"; clearInterval(timerHandle); $("sbTimer").hidden = true; render(); window.scrollTo(0, 0); }
   function testNugget(n) {
-    const linked = questionsFor(n.id), coreOnes = linked.filter(isCore);
+    const linked = questionsFor(n.id), coreOnes = linked.filter((q) => coreFor(q, n.id));
     const ids = (coreOnes.length ? coreOnes : linked).map((q) => q.id);
     if (!ids.length) return;
     const back = { unit: lesson.unit, idx: lesson.idx };
-    startExam(Object.assign({}, cfg, { mode: "practice", shuffleQ: false, unit: "", types: "all" }), ids);
+    startExam(Object.assign({}, cfg, { mode: "practice", shuffleQ: false, unit: "", types: "all", nugget: n.id }), ids);
     if (session) { session.fromLesson = back; persist(); render(); }
   }
   function nuggetPrompt(n) {
@@ -891,7 +897,8 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     if (!seen[n.id]) { seen[n.id] = 1; storeSet(SEEN_KEY, seen); }
     const units = unitList().filter((x) => all.some((k) => unitKey(k) === x.key));
     const mod = (bank.modules || {})[n.module] || {};
-    const qn = (questionsFor(n.id).filter(isCore).length || questionsFor(n.id).length);
+    const linkedQ = questionsFor(n.id), coreQ = linkedQ.filter((q) => coreFor(q, n.id));
+    const qn = lessonItems(coreQ.length ? coreQ : linkedQ, n.id);
     const goto = (i) => { lesson.idx = i; render(); window.scrollTo(0, 0); };
 
     main.append(h("section", { class: "panel" },

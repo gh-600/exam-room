@@ -70,6 +70,8 @@ DOCS = {
     "oidc": G + "actions/concepts/security/openid-connect",
     "oidc-azure": G + "actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure",
     "memory": G + "copilot/concepts/prompting-and-context/copilot-memory",
+    "agent-secrets": G + "copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/configure-secrets-and-variables",
+    "use-agent": G + "copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-on-github",
     "gh-aw-faq": "https://github.github.com/gh-aw/reference/faq/",
     "gh-aw-how": "https://github.github.com/gh-aw/introduction/how-they-work/",
 }

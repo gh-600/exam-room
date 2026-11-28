@@ -27,7 +27,7 @@ WHY = {
     ("DG", "M1 unit 4 has a \"Controls at a glance\" table: each GitHub control and what it enforces."),
     ("SG", "The audience profile describes GitHub as \"the system of record and control plane\"."),
     ("TRAP", "Environment reviewers act before the job starts, not after.")]),
-"x1-d1-job-outputs": ("Configure an agent to output a structured plan", [
+"x1-d1-job-outputs": ("Configure an agent to be invoked in a CI workflow", [
     ("CODE", "M2 unit 6 shows step outputs, job outputs and `needs` in YAML, a natural code-completion item."),
     ("DG", "The unit stresses \"Outputs are workflow contracts\" and contrasts them with `env`."),
     ("LIVE", LIVE + "completing workflow YAML.")]),
@@ -129,7 +129,7 @@ WHY = {
 "x1-d4-feedback-loop": ("Revise instructions, workflows, or constraints", [
     ("DG", "M5 unit 6 gives the feedback loop as numbered steps: a build-list item."),
     ("TRAP", "Removing checks or widening permissions are tempting \"fixes\".")]),
-"x1-d4-required-check-series": ("Generate evaluation signals by using automated scanning tools", [
+"x1-d4-required-check-series": ("Specify expected outcomes and operational constraints for agent tasks", [
     ("REP", "Required status checks appear in nearly every module."),
     ("DG", "M2 unit 3: \"success is enforced by the system, not assumed by the agent\".")]),
 "x1-d4-skipped-check": ("Identify failures by using logs, plans, traces, outputs, and workflow artifacts", [

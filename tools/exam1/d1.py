@@ -52,7 +52,7 @@ Q("x1-d1-control-plane-statements", "statements", "D1", "M1U4", "understand", do
 
 Q("x1-d1-job-outputs", "dropdown", "D1", "M2U6", "apply", docs=["job-outputs"],
   stem="You are building a workflow in which a job named `plan` generates a plan and a job named `implement` uses it.\n\n"
-       "You need to pass the plan from the `plan` job to the `implement` job as a structured value.\n\n"
+       "You need to pass the plan from the `plan` job to the `implement` job as a job output.\n\n"
        "How should you complete the workflow?",
   template="jobs:\n  plan:\n    runs-on: ubuntu-latest\n    outputs:\n      plan: ${{ steps.generate_plan.outputs.plan }}\n    steps:\n      - id: generate_plan\n        run: echo \"plan=...\" >> \"[[file]]\"\n\n"
            "  implement:\n    runs-on: ubuntu-latest\n    [[dep]]: plan\n    steps:\n      - run: echo \"Using plan: ${{ [[expr]] }}\"\n",

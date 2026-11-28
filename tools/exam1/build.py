@@ -58,6 +58,18 @@ for mod in (d1, d2, d3, d4, d5, d6):
     for q in mod.QUESTIONS: add_why(q)
 add_why(case.CASE)
 
+from lessons import LESSONS, LINK
+def link(q):
+    if q["type"] == "case":
+        for sub in q["questions"]: link(sub)
+        return
+    nid, also = LINK[q["id"]]
+    q["nugget"] = nid
+    if also: q["also"] = also
+for mod in (d1, d2, d3, d4, d5, d6):
+    for q in mod.QUESTIONS: link(q)
+link(case.CASE)
+
 # Interleave the domains so that a fixed-order run doesn't group them; the case study closes the exam.
 pools = [list(m.QUESTIONS) for m in (d2, d1, d5, d4, d6, d3)]
 order = []
@@ -83,13 +95,14 @@ CONFLICTS = [
 ]
 
 bank = {
-    "title": "GH-600 · Full exam 1 · 60 questions",
+    "title": "GH-600 · Full exam 1 · 60 questions and 50 lessons",
     "version": 1,
     "author": "Claude. Questions follow the Microsoft Learn modules for GH-600; answers checked against the GitHub Docs source of 26 November 2026. Not reviewed by an independent expert.",
     "passingScore": 700,
     "durationMinutes": 120,
     "domains": DOMAINS,
     "modules": {k: {"title": v[1], "url": "https://learn.microsoft.com/en-us/training/modules/" + v[0] + "/", "units": UNIT_TITLES[k]} for k, v in M.items()},
+    "nuggets": LESSONS,
     "conflicts": CONFLICTS,
     "questions": questions,
 }

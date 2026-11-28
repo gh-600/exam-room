@@ -89,6 +89,7 @@ for q, parent in all_q():
 print("correct letter for single-answer questions:", dict(sorted(letters.items())))
 if max(letters.values()) - min(letters.values()) > 2: warns.append("letters are unevenly spread")
 
+UK_EARLY = r"\b(organis\w+|behaviour\w*|colour\w*|licence\w*|authoris\w+|summaris\w+|analys(e|ed|es|ing)\b|catalogue\w*|centre\w*|favour\w*|programme\w*|whilst|cancelled|cancelling|labelled|modelling|prioritis\w+|recognis\w+|customis\w+|minimis\w+|optimis\w+|serialis\w+|artefact\w*|defence|neighbour\w*)\b"
 # ---------- quotes ----------
 learn = {}
 for f in glob.glob(LEARN_DIR + "m*-u*.md"):
@@ -141,6 +142,35 @@ for q, parent in all_q():
         else:
             errs.append(qid + ": quotation from a source that can't be checked: " + src)
 print("evidence: %d verbatim quotes checked, %d documentation summaries" % (nq, nn))
+
+# ---------- lessons ----------
+nug = {n["id"]: n for n in bank.get("nuggets", [])}
+if nug:
+    used = collections.Counter()
+    for q, parent in all_q():
+        if q["type"] == "case": continue
+        qid = (parent["id"] + "/" if parent else "") + q["id"]
+        if q.get("nugget") not in nug: errs.append(qid + ": lesson missing or unknown: %s" % q.get("nugget"))
+        for x in [q.get("nugget")] + q.get("also", []):
+            if x not in nug: errs.append(qid + ": unknown lesson " + str(x))
+            used[x] += 1
+    order = [(n["module"], n["unit"]) for n in bank["nuggets"]]
+    if order != sorted(order): warns.append("lessons aren't in module and unit order")
+    for n in bank["nuggets"]:
+        if not used[n["id"]]: errs.append(n["id"] + ": lesson without a question")
+        for f in ("title", "body", "watch", "skill", "domain", "learn"):
+            if not n.get(f): errs.append(n["id"] + ": lesson lacks " + f)
+        if n["learn"] not in learn: errs.append(n["id"] + ": Learn unit text not saved for " + n["learn"])
+        if (n["status"] == "confirmed") != bool(n.get("depth")): errs.append(n["id"] + ": status and depth disagree")
+        if n.get("depth") and not n.get("sources"): errs.append(n["id"] + ": depth without a documentation source")
+        for s in n.get("sources", []):
+            if "docs.github.com" in s and not doc_file(s): errs.append(n["id"] + ": no docs page for " + s)
+        for f in ("title", "body", "example", "depth", "watch"):
+            m = re.search(UK_EARLY, n.get(f, ""))
+            if m: errs.append(n["id"] + ": British spelling '%s'" % m.group(0))
+        if n["body"].count("```") % 2 or n.get("example", "").count("```") % 2: errs.append(n["id"] + ": unbalanced code fence")
+    words = sum(len((n["body"] + " " + n.get("example", "") + " " + n.get("depth", "") + " " + n.get("watch", "")).split()) for n in bank["nuggets"])
+    print("lessons: %d (%d confirmed in docs, %d from Learn only), %d words, questions per lesson %d-%d" % (len(nug), sum(n["status"] == "confirmed" for n in bank["nuggets"]), sum(n["status"] != "confirmed" for n in bank["nuggets"]), words, min(used.values()), max(used.values())))
 
 # ---------- Microsoft style lint ----------
 UK = r"\b(organis\w+|behaviour\w*|colour\w*|licence\w*|authoris\w+|summaris\w+|analys(e|ed|es|ing)\b|catalogue\w*|centre\w*|favour\w*|programme\w*|whilst|cancelled|cancelling|labelled|modelling|prioritis\w+|recognis\w+|customis\w+|minimis\w+|optimis\w+|serialis\w+|artefact\w*|defence)\b"

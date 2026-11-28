@@ -57,9 +57,9 @@ Q("x1-d4-required-check-series", "yesno", "D4", "M5U5", "evaluate", also_units=[
   scenario="You have a GitHub repository named Repo1. The `main` branch has no rulesets and no branch protection rules. Agents open pull requests that target `main`. A workflow named `ci.yml` runs for every pull request that targets `main` and reports a check named `test`.\n\n"
            "You need to ensure that a pull request cannot be merged into `main` unless the tests pass.",
   items=[
-      {"id": "s1", "solution": "You create a ruleset that targets `main` and requires a pull request with one approving review before merging.", "answer": "no",
+      {"id": "s1", "solution": "You create an active ruleset that targets `main` and requires a pull request with one approving review before merging.", "answer": "no",
        "explanation": "A reviewer can approve while `test` is failing. Nothing requires the check to pass."},
-      {"id": "s2", "solution": "You create a ruleset that targets `main`, and you add `test` as a required status check.", "answer": "yes",
+      {"id": "s2", "solution": "You create an active ruleset that targets `main`, and you add `test` as a required status check.", "answer": "yes",
        "explanation": "The ruleset blocks the merge until `test` passes, whoever opened or approved the pull request."},
       {"id": "s3", "solution": "You create a branch protection rule for `main`, select **Require status checks to pass before merging**, and select the `test` check.", "answer": "yes",
        "explanation": "A branch protection rule with `test` selected as a required status check enforces the same gate as the ruleset."},
