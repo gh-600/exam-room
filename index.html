@@ -69,7 +69,6 @@ p { margin: 0; }
 .timer { font-family: var(--font-mono); font-variant-numeric: tabular-nums; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 4px; padding: 2px 8px; }
 .pause-btn { background: transparent; color: var(--bar-ink); border: 1px solid rgba(255,255,255,0.3); padding: 2px 10px; font-size: 0.85rem; font-weight: 600; }
 .pause-btn[aria-pressed="true"] { background: var(--flag); border-color: var(--flag); color: #fff; }
-.pause-btn.confirm { background: var(--bad); border-color: var(--bad); color: #fff; }
 .timer.paused { opacity: 0.7; }
 .timer.low { background: var(--bad); border-color: var(--bad); color: #fff; }
 
@@ -712,10 +711,10 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
 
     const saved = storeGet(SESSION_KEY);
     if (saved && !saved.finished && saved.units && saved.bank) {
-      const left = saved.endsAt ? saved.endsAt - Date.now() : null;
+      const left = saved.endsAt ? saved.endsAt - (saved.pausedAt || Date.now()) : null;
       main.append(h("div", { class: "notice info" },
         h("div", { class: "row" },
-          h("span", { text: "You have an unfinished attempt: " + (saved.bankTitle || "exam") + ", " + Object.keys(saved.answers || {}).length + " of " + saved.units.length + " answered" + (left !== null ? (left > 0 ? ", " + fmtTime(left) + " left." : ", time is up.") : ".") }),
+          h("span", { text: "You have an unfinished attempt: " + (saved.bankTitle || "exam") + ", " + Object.keys(saved.answers || {}).length + " of " + saved.units.length + " answered" + (left !== null ? (left > 0 ? ", " + fmtTime(left) + " left" + (saved.pausedAt ? " (clock paused)." : ".") : ", time is up.") : ".") }),
           h("button", { type: "button", onclick: () => { session = saved; session.first = session.first || {}; session.enteredAt = null; hydrateUnits(); view = "question"; startTimer(); render(); } }, "Resume"),
           h("button", { type: "button", class: "quiet", onclick: () => { storeSet(SESSION_KEY, null); renderStart(); } }, "Discard")
         )));
@@ -1417,19 +1416,26 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
 
   // ---------- action bar ----------
   $("btnPause").addEventListener("click", togglePause);
-  // Quit: abandon the attempt without scoring it. Two taps, because window.confirm isn't available in every host.
-  let quitArmed = null;
+  // Quit: save and exit (the clock is paused and the attempt can be resumed from the start page) or discard.
+  function leaveToStart(msg) {
+    clearInterval(timerHandle); session = null;
+    $("sbTimer").hidden = true; $("btnPause").hidden = true; $("btnQuit").hidden = true;
+    view = "start"; renderStart();
+    if (msg) $("main").prepend(h("div", { class: "notice info", role: "status", text: msg }));
+  }
   $("btnQuit").addEventListener("click", () => {
-    const b = $("btnQuit");
-    if (!quitArmed) {
-      b.textContent = "Quit without saving?"; b.classList.add("confirm");
-      quitArmed = setTimeout(() => { quitArmed = null; b.textContent = "Quit"; b.classList.remove("confirm"); }, 4000);
-      return;
-    }
-    clearTimeout(quitArmed); quitArmed = null; b.textContent = "Quit"; b.classList.remove("confirm");
-    clearInterval(timerHandle); session = null; storeSet(SESSION_KEY, null);
-    $("sbTimer").hidden = true; $("btnPause").hidden = true; b.hidden = true;
-    view = "start"; renderStart("Attempt abandoned. Nothing was saved.");
+    if (!session || session.finished) return;
+    const old = document.getElementById("quitMenu"); if (old) { old.remove(); return; }
+    const menu = h("div", { class: "notice info", id: "quitMenu", role: "dialog", "aria-label": "Leave this attempt" },
+      h("p", { style: "margin:0 0 8px" }, h("strong", null, "Leave this attempt?")),
+      h("div", { class: "row" },
+        h("button", { type: "button", onclick: () => {
+          if (!session.pausedAt) { trackTime(); session.enteredAt = null; session.pausedAt = Date.now(); }
+          persist(); leaveToStart("Attempt saved with the clock paused. Resume it from the box at the top of this page.");
+        } }, "Save and exit"),
+        h("button", { type: "button", class: "danger", onclick: () => { storeSet(SESSION_KEY, null); leaveToStart("Attempt discarded. Nothing was saved."); } }, "Discard attempt"),
+        h("button", { type: "button", class: "quiet", onclick: () => menu.remove() }, "Cancel")));
+    $("main").prepend(menu); menu.querySelector("button").focus(); window.scrollTo(0, 0);
   });
   $("btnPrev").addEventListener("click", () => go(session.idx - 1));
   $("btnNext").addEventListener("click", () => {
