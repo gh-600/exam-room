@@ -165,7 +165,29 @@
     "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
     "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers",
     "https://docs.github.com/en/copilot/tutorials/cloud-agent/give-access-to-resources"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure an agent to handle environment-specific constraints",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M2 unit 7: \"The agent's runtime environment has its own secret boundary.\""
+     },
+     {
+      "kind": "Precise in GitHub Docs",
+      "text": "Docs state the exact rule: only Agents secrets prefixed `COPILOT_MCP_` reach the MCP configuration."
+     },
+     {
+      "kind": "Reported from the live exam",
+      "text": "A candidate who passed the live exam (Aug 2026) reported this topic: restricting MCP tools and permission scopes."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Actions secrets look like the obvious answer."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d1-plan-first",
@@ -221,7 +243,25 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure agent planning to be distinct from agent execution",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M2 unit 4 gives explicit decision guidance: plan-first for high-risk work (workflows, infra, auth, production)."
+     },
+     {
+      "kind": "Repeated across modules",
+      "text": "Plan-first versus plan + execution is the central choice of the unit and returns in M6 (risk-based autonomy)."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Both options are reviewed before merge; only the timing of validation differs, which makes an easy distractor."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d5-fan-in",
@@ -272,7 +312,25 @@
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
     "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax",
     "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Apply an orchestration pattern to coordinate multiple agents",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Learn says it is tested",
+      "text": "M4 unit 3 says of fan-out/fan-in with `needs`: \"This pattern is tested in the exam\". The strongest clue in the material."
+     },
+     {
+      "kind": "Code in the unit",
+      "text": "The unit gives the full YAML."
+     },
+     {
+      "kind": "Reported from the live exam",
+      "text": "A candidate who passed the live exam (Aug 2026) reported this topic: completing workflow YAML."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d4-real-intent",
@@ -324,7 +382,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/3-inputs-outputs-success-criteria",
     "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/3-explain-agent-lifecycle-plan-act-evaluate"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Align evaluation criteria with development intent",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M2 unit 3 tip: \"CI passed is necessary, but not always sufficient.\""
+     },
+     {
+      "kind": "Repeated across modules",
+      "text": "M1 u.3 and u.5 repeat that evaluation rests on system signals, not on the agent's confidence."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d6-autonomy-levels",
@@ -404,7 +476,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Assign autonomy levels to maximize delivery speed while remaining compliant with organizational security and Responsible AI standards",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "Autonomy levels are a named skill group."
+     },
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M6 unit 2 defines four named levels, a ready-made matching item."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d3-source-of-truth",
@@ -485,7 +571,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity",
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/2-agent-memory-strategies"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Prevent conflicting context",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M5 units 2 and 4 both give the same mapping list: requirements → issue, decisions → PR, rules → instructions, results → runs."
+     },
+     {
+      "kind": "Study guide",
+      "text": "The study guide has a skill group for memory and state continuity."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d2-setup-steps",
@@ -537,7 +637,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
     "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/customize-the-agent-environment"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure an agent to handle environment-specific constraints",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "The audience profile names \"Copilot setup steps\" explicitly."
+     },
+     {
+      "kind": "Precise in GitHub Docs",
+      "text": "Fixed file path and fixed job name: an unambiguous detail."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d1-read-only-planner",
@@ -588,7 +702,25 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Prevent agent action until the agent checked and approved",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M2 unit 4: \"Treat instructions not to edit as guidance; treat tool allowlists and gates as enforcement.\""
+     },
+     {
+      "kind": "Repeated across modules",
+      "text": "Guidance versus enforcement recurs in M2 u.7 (hooks), M3 (tools) and M6 u.3 (\"controls in docs only\")."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Instructions look like a control. Exams like options that only ask the model to behave."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d5-workflow-run",
@@ -645,7 +777,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
     "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Apply an orchestration pattern to coordinate multiple agents",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Code in the unit",
+      "text": "M4 unit 3 shows the `workflow_run` YAML for sequential orchestration."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "`workflow_call` and `workflow_dispatch` are close distractors."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d4-root-cause",
@@ -721,7 +867,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Classify root causes, including reasoning errors, tool misuse, and context or environment issues",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "The bullet names the three categories used in M5 unit 6."
+     },
+     {
+      "kind": "Emphasised in Learn",
+      "text": "The unit gives examples per category, ready-made matching items."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d6-risk-routing",
@@ -781,7 +941,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
     "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Classify agent actions by operational, security, and compliance risk to right-size human interventions",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M6 unit 2: \"Don't rely on narrative explanations of risk. Use a machine-readable signal and enforce routing.\""
+     },
+     {
+      "kind": "Code in the unit",
+      "text": "The unit gives the complete YAML with `needs.plan.outputs.risk` and `environment`."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d3-resume",
@@ -832,7 +1006,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Resume agent work without repeating steps or diverging from prior decisions",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "The study-guide bullet matches the unit's resume flow almost word for word."
+     },
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M5 unit 3 gives a numbered resume flow."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d2-mcp-config",
@@ -895,7 +1083,29 @@
     "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
     "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Add an MCP server as a tool to an agent",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "Four study-guide bullets are about MCP servers."
+     },
+     {
+      "kind": "Code in the unit",
+      "text": "JSON configuration with `type`, `url` and `tools`: a natural drop-down item."
+     },
+     {
+      "kind": "Reported from the live exam",
+      "text": "A candidate who passed the live exam (Aug 2026) reported this topic: restricting the tools of an MCP server."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "`servers` (VS Code) versus `mcpServers` (cloud agent)."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d1-control-plane-statements",
@@ -947,7 +1157,25 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/4-describe-github-system-record-control-plane",
     "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Plan and implement the degree of agent autonomy, including guardrails",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M1 unit 4 has a \"Controls at a glance\" table: each GitHub control and what it enforces."
+     },
+     {
+      "kind": "Study guide",
+      "text": "The audience profile describes GitHub as \"the system of record and control plane\"."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Environment reviewers act before the job starts, not after."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d5-concurrency-group",
@@ -999,7 +1227,25 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/4-execution-isolation-permissions-concurrency",
     "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure agent isolation for parallel execution",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M4 unit 4 has a dedicated section and a Note on the group name; M6 u.4 reuses concurrency."
+     },
+     {
+      "kind": "Precise in GitHub Docs",
+      "text": "Docs: group names must be unique across workflows."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "`${{ github.ref }}` alone, matrix, and job-level concurrency are all offered as alternatives in the unit."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d4-feedback-loop",
@@ -1067,7 +1313,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Revise instructions, workflows, or constraints",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M5 unit 6 gives the feedback loop as numbered steps: a build-list item."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Removing checks or widening permissions are tempting \"fixes\"."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d6-security-failure",
@@ -1124,7 +1384,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/7-maintain-governance-operational-reliability",
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Require explicit authorization or controlled paths for irreversible or compliance-sensitive changes",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M6 unit 7: \"Investigate security failures instead of repeatedly retrying\"."
+     },
+     {
+      "kind": "Repeated across modules",
+      "text": "\"Escalate after the same failure twice\" appears in M2 u.7, M4 u.5 and u.7."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d3-drift",
@@ -1180,7 +1454,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Detect and correct drift during extended agent execution",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "Drift detection and correction is a named skill."
+     },
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M5 unit 3 lists the signs of drift and the steps to correct it."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d2-app-token",
@@ -1238,7 +1526,25 @@
     "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
     "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow",
     "https://docs.github.com/en/actions/concepts/security/github_token"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure agent tool permissions",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M3 unit 5 has a section on trigger behaviour of `GITHUB_TOKEN` versus App tokens and PATs."
+     },
+     {
+      "kind": "Reported from the live exam",
+      "text": "A candidate who passed the live exam (Aug 2026) reported this topic: `GITHUB_TOKEN` scope and permissions blocks."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Adding `contents: write` doesn't help, a common wrong fix."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d1-job-outputs",
@@ -1300,7 +1606,25 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
     "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/pass-job-outputs"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure an agent to output a structured plan",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Code in the unit",
+      "text": "M2 unit 6 shows step outputs, job outputs and `needs` in YAML, a natural code-completion item."
+     },
+     {
+      "kind": "Emphasised in Learn",
+      "text": "The unit stresses \"Outputs are workflow contracts\" and contrasts them with `env`."
+     },
+     {
+      "kind": "Reported from the live exam",
+      "text": "A candidate who passed the live exam (Aug 2026) reported this topic: completing workflow YAML."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d5-conflict-types",
@@ -1380,7 +1704,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Detect and resolve agent conflicts, including overlapping code changes, duplicated effort, and contradictory outputs",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "The bullet names the conflict types almost exactly."
+     },
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M4 unit 5 lists four types, a ready-made matching item."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d4-required-check-series",
@@ -1429,7 +1767,21 @@
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/3-inputs-outputs-success-criteria",
     "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets",
     "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Generate evaluation signals by using automated scanning tools",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Repeated across modules",
+      "text": "Required status checks appear in nearly every module."
+     },
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M2 unit 3: \"success is enforced by the system, not assumed by the agent\"."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d6-rubber-stamping",
@@ -1486,7 +1838,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/7-maintain-governance-operational-reliability",
     "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/4-design-human-workflows"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Preserve execution velocity by minimizing approvals that do not materially reduce risk",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M6 unit 7 has an anti-pattern table with \"Rubber-stamping\"; M6 u.4 lists how to avoid governance fatigue."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "\"Add more approvals\" looks safe but is the opposite of the remedy."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d3-retention",
@@ -1544,7 +1910,25 @@
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
     "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository",
     "https://docs.github.com/en/actions/tutorials/store-and-share-data"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Define memory expiration, pruning, and reset rules",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M5 unit 3 puts the retention limits in bold, and unit 5 repeats the 90-day default."
+     },
+     {
+      "kind": "Precise in GitHub Docs",
+      "text": "Numbers (90, 1–90, 1–400) are exact and testable."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "`retention-days` can't exceed the repository limit."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d2-approve-workflows",
@@ -1596,7 +1980,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/4-describe-github-system-record-control-plane",
     "https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/risks-and-mitigations"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Enable an agent to perform autonomous actions, including creating branches and pull requests",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M1 unit 4 presents \"Approve and run workflows\" as a built-in guardrail; M2 u.5 repeats it."
+     },
+     {
+      "kind": "Precise in GitHub Docs",
+      "text": "Docs describe the default precisely, including who can approve."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d1-critical-tier",
@@ -1653,7 +2051,25 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
     "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Plan and implement the degree of agent autonomy, including guardrails",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Repeated across modules",
+      "text": "The risk tiers (low, medium, high, critical) appear in M2 u.6 and again in M6 u.2."
+     },
+     {
+      "kind": "Precise in GitHub Docs",
+      "text": "Docs define exactly when environment secrets become available (after approval)."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Each tier has a different control; picking the control of the neighbouring tier is the usual mistake."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d5-merge-validation",
@@ -1704,7 +2120,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/5-conflict-resolution-github-arbitration"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Detect and resolve agent conflicts, including overlapping code changes, duplicated effort, and contradictory outputs",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Code in the unit",
+      "text": "M4 unit 5 shows the merge validation step."
+     },
+     {
+      "kind": "Emphasised in Learn",
+      "text": "\"If this is a required check, conflicts become enforceable.\""
+     }
+    ]
+   }
   },
   {
    "id": "x1-d4-skipped-check",
@@ -1758,7 +2188,21 @@
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift",
     "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions",
     "https://docs.github.com/en/pull-requests/reference/status-checks"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Identify failures by using logs, plans, traces, outputs, and workflow artifacts",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Precise in GitHub Docs",
+      "text": "Docs state it bluntly: a skipped job reports Success, even for a required check."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Skipped job (passes) versus skipped workflow (pending, blocks)."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d6-cli-tool-scope",
@@ -1822,7 +2266,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy",
     "https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-cli"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Scope permissions and execution contexts to enforce least-privilege access",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M6 unit 2: \"Match tool access to consequence\", with a Copilot CLI `--allow-tool` example."
+     },
+     {
+      "kind": "Precise in GitHub Docs",
+      "text": "Docs define precedence: `--deny-tool` wins over `--allow-tool`."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d3-continuity-statements",
@@ -1873,7 +2331,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/4-memory-state-continuity"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Prevent stale context",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "Share state, prevent conflicting context, prevent stale context: three named bullets, one per statement."
+     },
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M5 unit 4: \"Agent state should be shared using durable references, not copied context.\""
+     }
+    ]
+   }
   },
   {
    "id": "x1-d2-hook-events",
@@ -1954,7 +2426,25 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
     "https://docs.github.com/en/copilot/concepts/customizations/hooks"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Implement traceability and accountability for agent actions",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Repeated across modules",
+      "text": "Hooks appear in M2 u.7, M4 u.7 and M6 u.3."
+     },
+     {
+      "kind": "Reported from the live exam",
+      "text": "A candidate who passed the live exam (Aug 2026) reported this topic: hooks as guardrails."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Only a pre-execution hook can block; the others only observe."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d1-evidence",
@@ -2017,7 +2507,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure agent to produce inspectable artifacts within standard development tooling",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Repeated across modules",
+      "text": "\"Minimum observability set\" appears twice in M2 u.7 and returns in M4 u.6 and M6 u.6."
+     },
+     {
+      "kind": "Emphasised in Learn",
+      "text": "Explicit principle: \"Evidence should be traceable to a specific workflow run and a specific commit.\""
+     }
+    ]
+   }
   },
   {
    "id": "x1-d5-artifact-audit",
@@ -2075,7 +2579,21 @@
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/6-system-observability-evidence-workflows",
     "https://docs.github.com/en/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/audit-log-events-for-your-organization",
     "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Perform post-hoc analysis of multi-agent behavior",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M4 unit 6 names the exact audit log query `action:artifact.destroy`, a precise, testable fact."
+     },
+     {
+      "kind": "Study guide",
+      "text": "\"Post-hoc analysis\" is a named bullet."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d4-evaluation-statements",
@@ -2127,7 +2645,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
     "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/5-identify-risks-traceability"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Identify qualitative and quantitative evaluation signals to evaluate agents",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M1 unit 5: \"A passing build does not automatically mean the change is complete.\""
+     },
+     {
+      "kind": "Repeated across modules",
+      "text": "Acceptance criteria in the issue appear in M2, M5 u.3 and u.5."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d6-progressive-autonomy",
@@ -2195,7 +2727,17 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/2-define-risk-based-autonomy"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Assign autonomy levels to maximize delivery speed while remaining compliant with organizational security and Responsible AI standards",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M6 unit 2 lists four phases in order, a ready-made build-list item."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d3-reset",
@@ -2251,7 +2793,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/3-agent-state-context-drift"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Define memory expiration, pruning, and reset rules",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "\"Reset rules\" is named in the study guide."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Pruning, summarizing and resetting are easily confused."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d2-cloud-agent-statements",
@@ -2304,7 +2860,21 @@
     "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
     "https://docs.github.com/en/copilot/concepts/security-governance-and-network-settings/risks-and-mitigations",
     "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-the-firewall"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Evaluate the execution context for an agent",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M3 unit 5 is a list of built-in limits of the cloud agent."
+     },
+     {
+      "kind": "Precise in GitHub Docs",
+      "text": "Docs state who can't approve and what the firewall covers: crisp true/false facts."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d1-plan-first-sequence",
@@ -2367,7 +2937,21 @@
    ],
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/4-plan-reason-execution"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Validate agent plans",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M2 unit 4 lists the plan-first steps in order, the raw material of a build-list item."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "The plan + execution PR is a tempting distractor in the sequence."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d5-subagent-frontmatter",
@@ -2426,7 +3010,25 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/7-scale-failure-recovery",
     "https://docs.github.com/en/copilot/reference/custom-agents-configuration"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Update, reconfigure, or replace agents without disrupting active workflows",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M4 unit 7 has a table of the two frontmatter settings and their effect on orchestration."
+     },
+     {
+      "kind": "Study guide",
+      "text": "The audience profile names \"Configuring custom agents\" as a responsibility."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "The two settings sound alike and act on different callers."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d4-trigger-fix",
@@ -2478,7 +3080,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/6-agent-failures-behavior-improvement",
     "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Refine tool usage and tool access",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M5 unit 6 lists \"Ensure workflows trigger on the correct events (push, pull_request)\" under tool configuration."
+     },
+     {
+      "kind": "Reported from the live exam",
+      "text": "A candidate who passed the live exam (Aug 2026) reported this topic: diagnosing problems from logs and workflow YAML."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d6-governance-statements",
@@ -2530,7 +3146,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/4-design-human-workflows",
     "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/3-enforce-governance-github-controls"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Identify the subset of actions that require human judgment",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M6 unit 4 tip: humans at decision points, not every step. M6 u.3: \"Controls in docs only is an anti-pattern\"."
+     },
+     {
+      "kind": "Study guide",
+      "text": "The bullet matches the tip almost word for word."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d3-memory-vs-instructions",
@@ -2587,7 +3217,25 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/2-agent-memory-strategies",
     "https://docs.github.com/en/copilot/concepts/prompting-and-context/copilot-memory"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Choose between short-term, long-term, and external memory",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "The study guide links Copilot Memory as the documentation for this domain."
+     },
+     {
+      "kind": "Reported from the live exam",
+      "text": "A candidate who passed the live exam (Aug 2026) reported this topic: Copilot Memory."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "A stored memory looks like a rule, but Copilot only uses it when it judges it relevant."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d2-hook-log",
@@ -2640,7 +3288,21 @@
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/7-scale-failure-recovery",
     "https://docs.github.com/en/copilot/concepts/customizations/hooks",
     "https://docs.github.com/en/copilot/reference/hooks-reference"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Implement escalation paths",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Code in the unit",
+      "text": "M4 unit 7 shows this exact log output and names the `preToolUse` hook."
+     },
+     {
+      "kind": "Reported from the live exam",
+      "text": "A candidate who passed the live exam (Aug 2026) reported this topic: diagnosing from logs and hooks as guardrails."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d1-defensive-gating",
@@ -2697,7 +3359,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/6-reliable-workflows",
     "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure an agent to be invoked in a CI workflow",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Code in the unit",
+      "text": "M2 unit 6 gives a full YAML example of a job-level `if: github.event_name == 'pull_request'`."
+     },
+     {
+      "kind": "Repeated across modules",
+      "text": "The unit also contrasts the `github`, `vars` and `env` contexts, a classic matching or option set."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d5-isolation-statements",
@@ -2749,7 +3425,21 @@
    "sources": [
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/4-execution-isolation-permissions-concurrency",
     "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure agent isolation for parallel execution",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M4 unit 4: \"Why not job-level or matrix-based concurrency?\" is answered explicitly."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Matrix versus concurrency."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d4-dependency-review",
@@ -2807,7 +3497,21 @@
     "https://learn.microsoft.com/en-us/training/modules/memory-state-evaluation/5-evaluation-signals-quality-gates",
     "https://docs.github.com/en/code-security/tutorials/secure-your-organization/protect-against-threats",
     "https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-review"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Generate evaluation signals by using automated scanning tools",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "\"Automated scanning tools\" is a named bullet."
+     },
+     {
+      "kind": "Repeated across modules",
+      "text": "Security signals appear in M1 u.3, M2 u.3 and M5 u.5."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d2-lock-file",
@@ -2865,7 +3569,21 @@
     "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/2-interact-github-apis-workflows",
     "https://github.github.com/gh-aw/reference/faq/",
     "https://github.github.com/gh-aw/introduction/how-they-work/"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure an agent to be invoked in a CI workflow",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M3 unit 2 explains that the Markdown is compiled into a lock file that Actions executes."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Editing only the `.md` file feels enough. The study guide allows commonly used preview features, so treat this as medium likelihood."
+     }
+    ]
+   }
   },
   {
    "id": "x1-d5-ruleset-bypass",
@@ -2918,7 +3636,21 @@
     "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/7-scale-failure-recovery",
     "https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-on-github",
     "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Respond to degraded behavior or coordination across agents",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M4 unit 7 has a dedicated section on adding Copilot as a ruleset bypass actor."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Bypass lists are normally a wrong answer; here the narrow bypass is the right one, so read the constraint."
+     }
+    ]
+   }
   },
   {
    "id": "x1-case-litware",
@@ -2984,7 +3716,25 @@
       "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/3-enforce-governance-github-controls",
       "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners",
       "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets"
-     ]
+     ],
+     "whyExam": {
+      "skill": "Identify and mitigate common anti-patterns in agents",
+      "strength": "strong",
+      "clues": [
+       {
+        "kind": "Emphasised in Learn",
+        "text": "M6 unit 3: \"Make sure require CODEOWNERS review is enabled, or CODEOWNERS becomes advisory only.\""
+       },
+       {
+        "kind": "Repeated across modules",
+        "text": "CODEOWNERS appears in M1, M2, M4 and M6."
+       },
+       {
+        "kind": "Classic trap",
+        "text": "Order in the CODEOWNERS file: the last match wins."
+       }
+      ]
+     }
     },
     {
      "id": "c2",
@@ -3050,7 +3800,21 @@
       "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/4-design-human-workflows",
       "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments",
       "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments"
-     ]
+     ],
+     "whyExam": {
+      "skill": "Require explicit authorization or controlled paths for irreversible or compliance-sensitive changes",
+      "strength": "strong",
+      "clues": [
+       {
+        "kind": "Emphasised in Learn",
+        "text": "M6 unit 3: \"If a workflow accesses production secrets, treat it as critical risk and gate it.\""
+       },
+       {
+        "kind": "Repeated across modules",
+        "text": "Environments with required reviewers appear in M1, M2, M3, M4 and M6."
+       }
+      ]
+     }
     },
     {
      "id": "c3",
@@ -3108,7 +3872,25 @@
       "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/7-agent-operations-controls",
       "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
       "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers"
-     ]
+     ],
+     "whyExam": {
+      "skill": "Configure MCP allow lists",
+      "strength": "strong",
+      "clues": [
+       {
+        "kind": "Emphasised in Learn",
+        "text": "M2 unit 7: \"prefer enabling a narrow tool subset rather than broad wildcards\"."
+       },
+       {
+        "kind": "Reported from the live exam",
+        "text": "A candidate who passed the live exam (Aug 2026) reported this topic: restricting MCP tools."
+       },
+       {
+        "kind": "Classic trap",
+        "text": "`*` plus an instruction is the classic guidance-instead-of-enforcement distractor."
+       }
+      ]
+     }
     },
     {
      "id": "c4",
@@ -3160,7 +3942,21 @@
      "sources": [
       "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/4-execution-context-boundaries",
       "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-the-firewall"
-     ]
+     ],
+     "whyExam": {
+      "skill": "Configure an agent to handle environment-specific constraints",
+      "strength": "moderate",
+      "clues": [
+       {
+        "kind": "Emphasised in Learn",
+        "text": "M3 unit 4 lists network isolation and allowlisted outbound access among the guardrails."
+       },
+       {
+        "kind": "Precise in GitHub Docs",
+        "text": "Docs describe the firewall warning in the PR and the custom allowlist."
+       }
+      ]
+     }
     },
     {
      "id": "c5",
@@ -3213,7 +4009,21 @@
       "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/3-agent-orchestration-github-workflows",
       "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/4-execution-isolation-permissions-concurrency",
       "https://learn.microsoft.com/en-us/training/modules/multi-agent-systems-orchestration/2-multi-agent-responsibilities"
-     ]
+     ],
+     "whyExam": {
+      "skill": "Apply an orchestration pattern to coordinate multiple agents",
+      "strength": "strong",
+      "clues": [
+       {
+        "kind": "Emphasised in Learn",
+        "text": "M4 unit 3 key takeaway: parallel only when agents work on isolated paths."
+       },
+       {
+        "kind": "Repeated across modules",
+        "text": "M4 u.2 uses the same dependency-agent example."
+       }
+      ]
+     }
     },
     {
      "id": "c6",
@@ -3267,7 +4077,25 @@
       "https://learn.microsoft.com/en-us/training/modules/governance-guardrails-operations/5-control-agent-capabilities",
       "https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure",
       "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax"
-     ]
+     ],
+     "whyExam": {
+      "skill": "Scope permissions and execution contexts to enforce least-privilege access",
+      "strength": "strong",
+      "clues": [
+       {
+        "kind": "Code in the unit",
+        "text": "M6 unit 5 shows job-level permissions in YAML."
+       },
+       {
+        "kind": "Reported from the live exam",
+        "text": "A candidate who passed the live exam (Aug 2026) reported this topic: `id-token: write` for OIDC and permissions blocks."
+       },
+       {
+        "kind": "Precise in GitHub Docs",
+        "text": "Docs: declaring one permission sets every other one to `none`."
+       }
+      ]
+     }
     },
     {
      "id": "c7",
@@ -3324,7 +4152,21 @@
      "sources": [
       "https://learn.microsoft.com/en-us/training/modules/foundations-agentic-ai/5-identify-risks-traceability",
       "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/5-pull-request-governance-controls"
-     ]
+     ],
+     "whyExam": {
+      "skill": "Identify and mitigate common anti-patterns in agents",
+      "strength": "strong",
+      "clues": [
+       {
+        "kind": "Emphasised in Learn",
+        "text": "M1 unit 5 has a risk-to-mitigation table; \"planless execution\" is its first row."
+       },
+       {
+        "kind": "Study guide",
+        "text": "The study guide names anti-patterns explicitly."
+       }
+      ]
+     }
     },
     {
      "id": "c8",
@@ -3375,7 +4217,21 @@
      ],
      "sources": [
       "https://learn.microsoft.com/en-us/training/modules/design-agent-architecture-integration/2-agent-responsibilities"
-     ]
+     ],
+     "whyExam": {
+      "skill": "Identify steps for agents to perform",
+      "strength": "strong",
+      "clues": [
+       {
+        "kind": "Emphasised in Learn",
+        "text": "M2 unit 2: \"Most teams start by scoping agents to the implementation and validation stages.\""
+       },
+       {
+        "kind": "Repeated across modules",
+        "text": "\"Agents propose; humans and policy accept\" appears in M2 and M4."
+       }
+      ]
+     }
     }
    ]
   }

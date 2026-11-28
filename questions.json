@@ -197,7 +197,21 @@
    ],
    "also": [
     "M3-U4-C7"
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure agent tool permissions",
+    "strength": "strong",
+    "clues": [
+     {
+      "kind": "Repeated across modules",
+      "text": "Least-privilege tokens appear in M1, M2, M3 and M6."
+     },
+     {
+      "kind": "Reported from the live exam",
+      "text": "A candidate who passed the live exam (Aug 2026) reported this topic: `GITHUB_TOKEN` scope and permissions blocks."
+     }
+    ]
+   }
   },
   {
    "id": "m3-u3-api-center",
@@ -257,7 +271,21 @@
      "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
      "label": "Microsoft Learn"
     }
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure the MCP registries",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M3 unit 3 gives the registry requirements as numbered steps, including the Azure API Center option."
+     },
+     {
+      "kind": "Precise in GitHub Docs",
+      "text": "Exact endpoints and the \"base URL only\" rule are precise, testable details."
+     }
+    ]
+   }
   },
   {
    "id": "m3-u3-registry-only",
@@ -305,7 +333,21 @@
      "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
      "label": "Microsoft Learn"
     }
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure MCP allow lists",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M3 unit 3 Note: under Registry only, even local servers must be in the registry with matching IDs."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Local servers seem exempt from the policy."
+     }
+    ]
+   }
   },
   {
    "id": "m3-u5-rollback",
@@ -369,7 +411,21 @@
      "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/5-agent-execution-limits-protections",
      "label": "Microsoft Learn"
     }
-   ]
+   ],
+   "whyExam": {
+    "skill": "Implement rollbacks",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "\"Implement rollbacks\" is a named bullet."
+     },
+     {
+      "kind": "Classic trap",
+      "text": "Force-push and bypass lists are standard wrong options."
+     }
+    ]
+   }
   },
   {
    "id": "m3-u3-three-roles",
@@ -440,7 +496,17 @@
      "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
      "label": "Microsoft Learn"
     }
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure MCP servers",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Emphasised in Learn",
+      "text": "M3 unit 3 states the three roles in one list: server exposes, registry makes discoverable, allow list decides."
+     }
+    ]
+   }
   },
   {
    "id": "m3-u3-remote-config",
@@ -498,7 +564,21 @@
      "source": "https://learn.microsoft.com/en-us/training/modules/agent-tooling-mcp-execution-environments/3-model-context-protocol-servers-registries-allow-lists",
      "label": "Microsoft Learn"
     }
-   ]
+   ],
+   "whyExam": {
+    "skill": "Configure a GitHub remote MCP server",
+    "strength": "moderate",
+    "clues": [
+     {
+      "kind": "Study guide",
+      "text": "The bullet names the GitHub remote MCP server explicitly."
+     },
+     {
+      "kind": "Code in the unit",
+      "text": "M3 unit 3 gives the URL and server type, a natural drop-down item."
+     }
+    ]
+   }
   }
  ]
 }

@@ -48,6 +48,16 @@ for mod in (d1, d2, d3, d4, d5, d6):
     for q in mod.QUESTIONS: formalize(q)
 formalize(case.CASE)
 
+from why import why
+def add_why(q):
+    if q["type"] == "case":
+        for sub in q["questions"]: sub["whyExam"] = why(sub["id"], sub["domain"])
+    else:
+        q["whyExam"] = why(q["id"], q["domain"])
+for mod in (d1, d2, d3, d4, d5, d6):
+    for q in mod.QUESTIONS: add_why(q)
+add_why(case.CASE)
+
 # Interleave the domains so that a fixed-order run doesn't group them; the case study closes the exam.
 pools = [list(m.QUESTIONS) for m in (d2, d1, d5, d4, d6, d3)]
 order = []
