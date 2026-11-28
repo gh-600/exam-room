@@ -69,6 +69,7 @@ p { margin: 0; }
 .timer { font-family: var(--font-mono); font-variant-numeric: tabular-nums; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 4px; padding: 2px 8px; }
 .pause-btn { background: transparent; color: var(--bar-ink); border: 1px solid rgba(255,255,255,0.3); padding: 2px 10px; font-size: 0.85rem; font-weight: 600; }
 .pause-btn[aria-pressed="true"] { background: var(--flag); border-color: var(--flag); color: #fff; }
+.pause-btn.confirm { background: var(--bad); border-color: var(--bad); color: #fff; }
 .timer.paused { opacity: 0.7; }
 .timer.low { background: var(--bad); border-color: var(--bad); color: #fff; }
 
@@ -147,7 +148,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .prose pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.86rem; line-height: 1.5; white-space: pre; margin: 0 0 12px; }
 .prose pre.code code { background: none; padding: 0; border: 0; font-size: inherit; }
 .hot { background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.86rem; line-height: 1.9; white-space: pre; margin: 0; }
-.hot select { font-family: var(--font-mono); font-size: 0.86rem; padding: 1px 4px; border-color: var(--accent); }
+.hot select { font-family: var(--font-mono); font-size: 0.86rem; padding: 1px 4px; border-color: var(--accent); max-width: min(100%, 62vw); }
 .hot select.correct { border-color: var(--ok); background: var(--ok-soft); }
 .hot select.wrong { border-color: var(--bad); background: var(--bad-soft); }
 .feedback { border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); background: var(--soft); }
@@ -256,6 +257,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
       <span id="sbCount" class="mono"></span>
       <span id="sbTimer" class="timer" hidden></span>
       <button type="button" id="btnPause" class="pause-btn" aria-pressed="false" hidden>Pause</button>
+      <button type="button" id="btnQuit" class="pause-btn" hidden>Quit</button>
     </div>
   </div>
 </header>
@@ -576,8 +578,9 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     const tick = () => {
       const t = $("sbTimer");
       const pb = $("btnPause");
-      if (!session || session.finished || view === "start" || view === "results" || view === "learn") { t.hidden = true; pb.hidden = true; return; }
-      t.hidden = false; pb.hidden = false;
+      const qb = $("btnQuit");
+      if (!session || session.finished || view === "start" || view === "results" || view === "learn") { t.hidden = true; pb.hidden = true; qb.hidden = true; return; }
+      t.hidden = false; pb.hidden = false; qb.hidden = false;
       pb.textContent = session.pausedAt ? "Resume" : "Pause"; pb.setAttribute("aria-pressed", session.pausedAt ? "true" : "false");
       t.classList.toggle("paused", !!session.pausedAt);
       if (session.pausedAt) {
@@ -790,7 +793,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
         h("div", { class: "grid2" },
           h("div", { class: "field" }, h("span", null, "Mode"), modeSeg, h("p", { class: "small muted" }, "Exam: timed, locked sections, answers at the end. Practice: the same questions, but each answer is marked and explained as soon as you check it or press Next. Learn: short lessons from the Learn modules, each with questions to test it.")),
           h("div", { class: "field" }, h("span", null, "Number of questions"), h("input", { type: "number", id: "cfgCount", min: "1", max: String(bank.questions.length), value: String(Math.min(cfg.count || bank.questions.length, bank.questions.length)) }), h("p", { class: "small muted" }, "Out of " + bank.questions.length + (totalUnits(bank.questions) !== bank.questions.length ? ", which make " + totalUnits(bank.questions) + " screens as the exam counts them" : "") + ". A Yes/No series or case study counts as one question but holds several scored items.")),
-          h("div", { class: "field" }, h("span", null, "Time limit (minutes, exam mode)"), h("input", { type: "number", id: "cfgMinutes", min: "1", max: "300", value: String(cfg.minutes || 45) }), h("p", { class: "small muted" }, "The real GH-600 allows 120 minutes for about 40–60 questions."))
+          h("div", { class: "field" }, h("span", null, "Time limit (minutes, exam mode)"), h("div", { class: "row" }, h("input", { type: "number", id: "cfgMinutes", min: "1", max: "300", value: String(cfg.minutes || bank.durationMinutes || 45), disabled: cfg.minutes === 0 }), h("label", { class: "row small" }, h("input", { type: "checkbox", id: "cfgNoLimit", checked: cfg.minutes === 0, onchange: (e) => { $("cfgMinutes").disabled = e.target.checked; } }), "No time limit")), h("p", { class: "small muted" }, "The real GH-600 allows 120 minutes for about 40–60 questions."))
         ),
         unitList().length ? h("div", { class: "field" }, h("label", { for: "cfgUnit", style: "font-size:0.88rem;font-weight:600" }, "Module and unit"), h("select", { id: "cfgUnit" }, h("option", { value: "", text: "All units" }), unitList().map((x) => h("option", { value: x.key, text: x.label, selected: cfg.unit === x.key })))) : null,
         h("div", { class: "field" }, h("label", { for: "cfgTypes", style: "font-size:0.88rem;font-weight:600" }, "Question types"),
@@ -844,7 +847,7 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
     const mode = document.querySelector('input[name="mode"]:checked');
     cfg.mode = mode ? mode.value : "exam";
     cfg.count = Math.max(1, parseInt($("cfgCount").value, 10) || bank.questions.length);
-    cfg.minutes = Math.max(1, parseInt($("cfgMinutes").value, 10) || 45);
+    cfg.minutes = $("cfgNoLimit") && $("cfgNoLimit").checked ? 0 : Math.max(1, parseInt($("cfgMinutes").value, 10) || 45);
     cfg.domains = [...document.querySelectorAll('input[name="dom"]:checked')].map((x) => x.value);
     cfg.unit = $("cfgUnit") ? $("cfgUnit").value : "";
     cfg.types = $("cfgTypes") ? $("cfgTypes").value : "all";
@@ -1414,6 +1417,20 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
 
   // ---------- action bar ----------
   $("btnPause").addEventListener("click", togglePause);
+  // Quit: abandon the attempt without scoring it. Two taps, because window.confirm isn't available in every host.
+  let quitArmed = null;
+  $("btnQuit").addEventListener("click", () => {
+    const b = $("btnQuit");
+    if (!quitArmed) {
+      b.textContent = "Quit without saving?"; b.classList.add("confirm");
+      quitArmed = setTimeout(() => { quitArmed = null; b.textContent = "Quit"; b.classList.remove("confirm"); }, 4000);
+      return;
+    }
+    clearTimeout(quitArmed); quitArmed = null; b.textContent = "Quit"; b.classList.remove("confirm");
+    clearInterval(timerHandle); session = null; storeSet(SESSION_KEY, null);
+    $("sbTimer").hidden = true; $("btnPause").hidden = true; b.hidden = true;
+    view = "start"; renderStart("Attempt abandoned. Nothing was saved.");
+  });
   $("btnPrev").addEventListener("click", () => go(session.idx - 1));
   $("btnNext").addEventListener("click", () => {
     const u = cur();
