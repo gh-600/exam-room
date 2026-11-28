@@ -1171,7 +1171,34 @@ pre.example { background: var(--code-bg); border: 1px solid var(--line); border-
           h("p", { class: "small", style: "margin:6px 0" }, h("strong", null, "Study guide skill: "), w.skill),
           h("ul", { class: "why-list" }, w.clues.map((c) => h("li", null, h("strong", null, c.kind + ": "), h("span", { html: inline(c.text) })))),
           h("p", { class: "small muted", style: "margin:4px 0 0" }, "Clues from the study guide, the Learn modules, GitHub Docs and one candidate's report. Nobody outside Microsoft knows the real item pool.")); })(),
-      sources.length ? h("div", { class: "sources" }, h("span", { class: "label" }, "Sources"), sources.map((s) => h("a", { href: s, target: "_blank", rel: "noopener", text: s }))) : null);
+      sources.length ? h("div", { class: "sources" }, h("span", { class: "label" }, "Sources"), sources.map((s) => h("a", { href: s, target: "_blank", rel: "noopener", text: s }))) : null,
+      (() => { const m = h("span", { class: "small muted", role: "status" });
+        return h("div", { class: "row" }, h("button", { type: "button", class: "secondary", onclick: () => copyQuestion(u, pts, m) }, "Copy for Claude"), m); })());
+  }
+  // One question, ready to paste into a Claude chat to go deeper.
+  function questionMarkdown(u, pts) {
+    const r = itemRecord({ u, pts, answered: isAnswered(u) }, (session.units || []).indexOf(u) + 1 || "");
+    const L = [];
+    L.push("I'm preparing for the GitHub GH-600 exam (Developing in Agentic AI Systems). Help me go deeper on this practice question: explain why the correct answer is right" + (r.result === "correct" ? "" : ", why my answer is wrong") + ", which GitHub feature or concept it tests, and how it could be asked differently on the exam. Check product facts against GitHub Docs and tell me if anything in the question or the key looks wrong.", "");
+    L.push("## Question" + (r.domain ? " · " + r.domain + " " + (r.domainName || "") : "") + " · " + (session.bankTitle || "") + " · `" + r.key + "`", "");
+    if (r.caseStudy) L.push("**Case study: " + r.caseStudy.title + "**", "", r.caseStudy.scenario, "");
+    if (r.scenario) L.push("**Scenario (problem-solution series):**", "", r.scenario, "");
+    L.push(r.question, "");
+    if (r.options) { r.options.forEach((o) => L.push(o.letter + ". " + o.text + (o.correct ? "  ← correct" : "") + (o.chosen ? "  ← my answer" : ""))); L.push(""); }
+    L.push("**My answer:** " + (r.yourAnswer || "(none)"), "**Correct answer:** " + r.correctAnswer, "**Result:** " + r.result + (r.points < 1 && r.points > 0 ? " (" + Math.round(r.points * 100) + " %)" : ""), "");
+    if (r.explanation) L.push("## Explanation given", "", r.explanation, "");
+    if (r.options && r.options.some((o) => o.rationale)) { L.push("## Why each option"); r.options.forEach((o) => o.rationale && L.push("- " + o.letter + ": " + o.rationale)); L.push(""); }
+    if (r.blanks) { L.push("## Boxes"); r.blanks.forEach((b) => L.push("- " + b.box + ": chosen " + (b.chosen || "(none)") + ", correct " + b.correct + (b.rationale ? ". " + b.rationale : ""))); L.push(""); }
+    if (r.takeaway) L.push("**Remember:** " + r.takeaway, "");
+    if (r.whyExam) L.push("**Study guide skill:** " + r.whyExam, "");
+    if (r.evidence) { L.push("## Source excerpts"); r.evidence.forEach((e) => L.push("- " + (e.quote ? "\"" + plain(e.quote) + "\"" : plain(e.note || "")) + " (" + (e.label || "") + ", " + e.source + ")")); L.push(""); }
+    if (r.sources) { L.push("## Sources"); r.sources.forEach((s) => L.push("- " + s)); }
+    return L.join("\n");
+  }
+  function copyQuestion(u, pts, msg) {
+    const text = questionMarkdown(u, pts);
+    const done = () => { msg.textContent = "Copied. Paste it into a Claude chat."; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, msg)); else fallbackCopy(text, msg);
   }
 
   function updateBar() {
