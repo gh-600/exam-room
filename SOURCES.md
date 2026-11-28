@@ -2,7 +2,7 @@
 
 Referencia para generar bancos de preguntas del Exam Room. Cada pregunta debe salir de una habilidad del *study guide* y tener su respuesta verificada en una fuente de nivel 1.
 
-Actualizado: 27/11/2026. Las rutas de GitHub Docs sobre Copilot cambian a menudo. Si un enlace falla, busca su título en docs.github.com; GitHub suele redirigir las rutas antiguas.
+Actualizado: 28/11/2026. Las rutas de GitHub Docs sobre Copilot cambian a menudo. Si un enlace falla, busca su título en docs.github.com; GitHub suele redirigir las rutas antiguas.
 
 ---
 
